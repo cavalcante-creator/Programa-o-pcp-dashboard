@@ -101,26 +101,36 @@ turnos = sorted(set(i["Turno"] for i in dados_total if i["Turno"]))
 
 linha_sel = col1.selectbox("🏭 Linha", ["Todas"] + linhas)
 
-# 📅 DATA INTELIGENTE
+# 📅 CONTROLE DE DATA LADO A LADO
+col_data1, col_data2, col_data3 = col2.columns([2,1,2])
+
+# estado
 if "data_escolhida" not in st.session_state:
     st.session_state.data_escolhida = date.today()
 
-data_input = col2.date_input("📅 Selecionar data", value=st.session_state.data_escolhida)
+# calendário
+data_input = col_data1.date_input(
+    "Selecionar data",
+    value=st.session_state.data_escolhida
+)
 
-if col2.button("Hoje"):
+# botão hoje
+if col_data2.button("Hoje"):
     st.session_state.data_escolhida = date.today()
     data_input = date.today()
 
-mostrar_todas = col2.checkbox("Mostrar todas as datas", value=False)
+# checkbox
+mostrar_todas = col_data3.checkbox("Todas as datas", value=False)
 
+# regra
 if mostrar_todas:
     data_sel = "Todas"
 else:
     data_sel = data_input.strftime("%d/%m/%Y")
 
-# 🔔 Feedback visual
+# feedback
 if not mostrar_todas:
-    col2.caption(f"📍 Exibindo: {data_sel}")
+    col2.caption(f"📍 Data ativa: {data_sel}")
 
 turno_sel = col3.selectbox("⏱ Turno", ["Todos"] + turnos)
 
