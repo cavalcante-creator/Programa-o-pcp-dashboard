@@ -4,6 +4,8 @@ import requests
 import csv
 from io import StringIO
 from datetime import datetime, date
+from html2image import Html2Image
+import os
 
 # 🔄 Auto refresh
 st_autorefresh(interval=60000)
@@ -121,7 +123,7 @@ data_input = col2.date_input(
 
 turno_sel = col3.selectbox("⏱ Turno", ["Todos"] + turnos)
 
-# 📆 SEMANAS (NOVO)
+# 📆 SEMANAS
 semanas_disponiveis = sorted(
     set(get_semana(i.get("Data")) for i in dados_total if i.get("Data"))
 )
@@ -141,7 +143,7 @@ data_sel = data_input.strftime("%d/%m/%Y")
 if not mostrar_todas:
     colb3.caption(f"📍 Data ativa: {data_sel}")
 
-# 🔥 HTML (VISUAL ORIGINAL)
+# 🔥 HTML
 html = """
 <html>
 <head>
@@ -185,7 +187,6 @@ body {
 <body>
 """
 
-# 🔄 LOOP
 for linha, datas in estrutura.items():
 
     if linha_sel != "Todas" and linha != linha_sel:
@@ -196,11 +197,9 @@ for linha, datas in estrutura.items():
 
     for data, turnos in datas.items():
 
-        # filtro semana
         if semanas_sel and get_semana(data) not in semanas_sel:
             continue
 
-        # filtro data
         if not mostrar_todas and data != data_sel:
             continue
 
@@ -248,7 +247,6 @@ for linha, datas in estrutura.items():
 
     bloco_linha += "</div>"
 
-    # 🔥 NÃO MOSTRA LINHA VAZIA
     if tem_conteudo_linha:
         html += bloco_linha
 
@@ -256,3 +254,26 @@ html += "</body></html>"
 
 # 🚀 EXIBIR
 st.components.v1.html(html, height=2500, scrolling=True)
+
+# 📸 GERAR IMAGEM
+try:
+    hti = Html2Image(output_path=".")
+
+    hti.screenshot(
+        html_str=html,
+        save_as="pcp_programacao.png",
+        size=(1400, 2500)
+    )
+
+    st.image("pcp_programacao.png")
+
+    with open("pcp_programacao.png", "rb") as file:
+        st.download_button(
+            label="📥 Baixar imagem",
+            data=file,
+            file_name="programacao_pcp.png",
+            mime="image/png"
+        )
+
+except Exception as e:
+    st.warning("⚠️ Não foi possível gerar imagem no ambiente (normal no Streamlit Cloud). Use print da tela.")
