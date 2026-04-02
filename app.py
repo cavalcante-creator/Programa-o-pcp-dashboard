@@ -106,13 +106,20 @@ if "data_escolhida" not in st.session_state:
     st.session_state.data_escolhida = date.today()
 
 # 📅 CALENDÁRIO EM PORTUGUÊS (FORMATO BR)
-data_input = col2.date_input(
-    "📅 Selecionar data",
-    value=st.session_state.data_escolhida,
-    format="DD/MM/YYYY"
+# 📅 LISTA DE DATAS DISPONÍVEIS
+datas_disponiveis = sorted(set(i.get("Data") for i in dados_total if i.get("Data")))
+
+datas_sel = col2.multiselect(
+    "📅 Selecionar datas",
+    options=datas_disponiveis,
+    default=[datetime.today().strftime("%d/%m/%Y")]
 )
 
-turno_sel = col3.selectbox("⏱ Turno", ["Todos"] + turnos)
+turno_sel = col3.multiselect(
+    "⏱ Turno",
+    options=turnos,
+    default=turnos
+)
 
 # 🔽 LINHA DE BAIXO
 colb1, colb2, colb3 = st.columns(3)
@@ -120,16 +127,16 @@ colb1, colb2, colb3 = st.columns(3)
 # botão hoje
 if colb1.button("Hoje"):
     st.session_state.data_escolhida = date.today()
-    data_input = date.today()
+    datas_sel = [date.today().strftime("%d/%m/%Y")]
 
 # checkbox todas
 mostrar_todas = colb2.checkbox("Mostrar todas as datas", value=False)
 
 # lógica
 if mostrar_todas:
-    data_sel = "Todas"
+    datas_filtrar = datas_disponiveis
 else:
-    data_sel = data_input.strftime("%d/%m/%Y")
+    datas_filtrar = datas_sel
 
 # feedback
 if not mostrar_todas:
@@ -189,15 +196,15 @@ for linha, datas in estrutura.items():
 
     for data, turnos in datas.items():
 
-        if data_sel != "Todas" and data != data_sel:
-            continue
+        if data not in datas_filtrar:
+    continue
 
         html += f"<h3>📅 {data}</h3>"
 
         for turno, itens in turnos.items():
 
-            if turno_sel != "Todos" and turno != turno_sel:
-                continue
+            if turno not in turno_sel:
+    continue
 
             html += f"<b>Turno: {turno}</b><div class='cards'>"
 
