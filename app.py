@@ -199,6 +199,7 @@ for linha, datas in estrutura.items():
                 <div class='card ok'>
                 <b>{item.get("Produto")}</b><br>
                 Ordem: {item.get("Ordem")}<br>
+                Turno: {item.get("Turno","-")}<br>
                 Qtde: {item.get("Qtde Total")}<br>
                 Status: {item.get("Status","-")}<br>
                 Pendente: {item.get("Qtde Pendente","0")}
