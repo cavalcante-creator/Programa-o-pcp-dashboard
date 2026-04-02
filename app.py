@@ -30,7 +30,7 @@ st.markdown("""
 }
 
 .logo {
-    width: 300px;
+    width: 250px;
 }
 
 .titulo {
