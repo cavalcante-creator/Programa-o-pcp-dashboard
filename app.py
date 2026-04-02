@@ -84,6 +84,15 @@ for aba in abas:
 def nome_linha(linha):
     return linha.replace("BASE_", "").replace("_", " ")
 
+# 📆 FUNÇÃO SEMANA
+def get_semana(data_str):
+    try:
+        dt = datetime.strptime(data_str, "%d/%m/%Y")
+        ano, semana, _ = dt.isocalendar()
+        return f"Semana {semana}/{ano}"
+    except:
+        return "Sem data"
+
 estrutura = {}
 
 for item in dados_total:
@@ -94,7 +103,7 @@ for item in dados_total:
     estrutura.setdefault(linha, {}).setdefault(data, {}).setdefault(turno, []).append(item)
 
 # 🔽 FILTROS
-col1, col2, col3 = st.columns(3)
+col1, col2, col3, col4 = st.columns(4)
 
 linhas = sorted(set(nome_linha(i["Linha"]) for i in dados_total))
 turnos = sorted(set(i["Turno"] for i in dados_total if i["Turno"]))
@@ -111,6 +120,13 @@ data_input = col2.date_input(
 )
 
 turno_sel = col3.selectbox("⏱ Turno", ["Todos"] + turnos)
+
+# 📆 SEMANAS
+semanas_disponiveis = sorted(
+    set(get_semana(i.get("Data")) for i in dados_total if i.get("Data"))
+)
+
+semanas_sel = col4.multiselect("📆 Semanas", semanas_disponiveis)
 
 # 🔽 LINHA DE BAIXO
 colb1, colb2, colb3, colb4 = st.columns(4)
@@ -129,7 +145,7 @@ else:
 if not mostrar_todas:
     colb3.caption(f"📍 Data ativa: {data_sel}")
 
-# 🖨️ BOTÃO IMPRIMIR / PDF
+# 🖨️ BOTÃO PDF
 colb4.markdown("""
 <button onclick="window.print()" style="
     background-color:#2c3e50;
@@ -138,7 +154,7 @@ colb4.markdown("""
     padding:8px 16px;
     border-radius:8px;
     cursor:pointer;">
-🖨️ Exportar / Salvar PDF
+🖨️ Exportar PDF
 </button>
 """, unsafe_allow_html=True)
 
@@ -158,7 +174,6 @@ body {
     color: white;
     padding: 10px;
     border-radius: 8px;
-    font-weight: 500;
 }
 
 .cards {
@@ -171,7 +186,6 @@ body {
     padding: 12px;
     margin: 8px;
     border-radius: 12px;
-    font-size: 13px;
     background: white;
     box-shadow: 0px 4px 12px rgba(0,0,0,0.08);
     border-left: 5px solid transparent;
@@ -186,7 +200,7 @@ body {
 <body>
 """
 
-# 🔄 CONSTRUIR HTML
+# 🔄 LOOP
 for linha, datas in estrutura.items():
 
     if linha_sel != "Todas" and linha != linha_sel:
@@ -196,6 +210,12 @@ for linha, datas in estrutura.items():
 
     for data, turnos in datas.items():
 
+        # filtro semana
+        semana_item = get_semana(data)
+        if semanas_sel and semana_item not in semanas_sel:
+            continue
+
+        # filtro data
         if data_sel != "Todas" and data != data_sel:
             continue
 
