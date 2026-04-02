@@ -84,6 +84,15 @@ for aba in abas:
 def nome_linha(linha):
     return linha.replace("BASE_", "").replace("_", " ")
 
+# 📆 FUNÇÃO SEMANA
+def get_semana(data_str):
+    try:
+        dt = datetime.strptime(data_str, "%d/%m/%Y")
+        ano, semana, _ = dt.isocalendar()
+        return f"Semana {semana}/{ano}"
+    except:
+        return "Sem data"
+
 estrutura = {}
 
 for item in dados_total:
@@ -94,7 +103,7 @@ for item in dados_total:
     estrutura.setdefault(linha, {}).setdefault(data, {}).setdefault(turno, []).append(item)
 
 # 🔽 FILTROS (LINHA DE CIMA)
-col1, col2, col3 = st.columns(3)
+col1, col2, col3, col4 = st.columns(4)
 
 linhas = sorted(set(nome_linha(i["Linha"]) for i in dados_total))
 turnos = sorted(set(i["Turno"] for i in dados_total if i["Turno"]))
@@ -105,7 +114,7 @@ linha_sel = col1.selectbox("🏭 Linha", ["Todas"] + linhas)
 if "data_escolhida" not in st.session_state:
     st.session_state.data_escolhida = date.today()
 
-# 📅 CALENDÁRIO EM PORTUGUÊS (FORMATO BR)
+# 📅 DATA
 data_input = col2.date_input(
     "📅 Selecionar data",
     value=st.session_state.data_escolhida,
@@ -113,6 +122,16 @@ data_input = col2.date_input(
 )
 
 turno_sel = col3.selectbox("⏱ Turno", ["Todos"] + turnos)
+
+# 📆 LISTA DE SEMANAS
+semanas_disponiveis = sorted(
+    set(get_semana(i.get("Data")) for i in dados_total if i.get("Data"))
+)
+
+semanas_sel = col4.multiselect(
+    "📆 Semanas",
+    options=semanas_disponiveis
+)
 
 # 🔽 LINHA DE BAIXO
 colb1, colb2, colb3 = st.columns(3)
@@ -189,6 +208,12 @@ for linha, datas in estrutura.items():
 
     for data, turnos in datas.items():
 
+        # filtro semana
+        semana_item = get_semana(data)
+        if semanas_sel and semana_item not in semanas_sel:
+            continue
+
+        # filtro data normal
         if data_sel != "Todas" and data != data_sel:
             continue
 
