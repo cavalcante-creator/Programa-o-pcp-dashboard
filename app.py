@@ -111,7 +111,16 @@ datas = sorted(set(i["Data"] for i in dados_total if i["Data"]))
 turnos = sorted(set(i["Turno"] for i in dados_total if i["Turno"]))
 
 linha_sel = col1.selectbox("Linha", ["Todas"] + linhas)
-data_sel = col2.selectbox("Data", ["Todas"] + datas)
+from datetime import datetime, date
+
+# pegar hoje
+hoje = date.today()
+
+# calendário
+data_input = col2.date_input("Data", value=hoje)
+
+# converter para formato da planilha
+data_sel = data_input.strftime("%d/%m/%Y")
 turno_sel = col3.selectbox("Turno", ["Todos"] + turnos)
 
 # 🔥 HTML
