@@ -2,10 +2,8 @@ import streamlit as st
 from streamlit_autorefresh import st_autorefresh
 import requests
 import csv
-from io import StringIO, BytesIO
+from io import StringIO
 from datetime import datetime, date
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-from reportlab.lib.styles import getSampleStyleSheet
 
 # 🔄 Auto refresh
 st_autorefresh(interval=60000)
@@ -131,64 +129,111 @@ else:
 if not mostrar_todas:
     colb3.caption(f"📍 Data ativa: {data_sel}")
 
-# 🔥 GERAR HTML + TEXTO PDF
-html = ""
-pdf_texto = []
+# 🖨️ BOTÃO IMPRIMIR / PDF
+colb4.markdown("""
+<button onclick="window.print()" style="
+    background-color:#2c3e50;
+    color:white;
+    border:none;
+    padding:8px 16px;
+    border-radius:8px;
+    cursor:pointer;">
+🖨️ Exportar / Salvar PDF
+</button>
+""", unsafe_allow_html=True)
 
+# 🔥 HTML
+html = """
+<html>
+<head>
+<style>
+body {
+    font-family: 'Segoe UI', Arial;
+    background: #f5f7fa;
+    margin: 20px;
+}
+
+.linha h2 {
+    background: #2c3e50;
+    color: white;
+    padding: 10px;
+    border-radius: 8px;
+    font-weight: 500;
+}
+
+.cards {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.card {
+    width: 260px;
+    padding: 12px;
+    margin: 8px;
+    border-radius: 12px;
+    font-size: 13px;
+    background: white;
+    box-shadow: 0px 4px 12px rgba(0,0,0,0.08);
+    border-left: 5px solid transparent;
+}
+
+.falta { border-left: 5px solid #e74c3c; }
+.ok { border-left: 5px solid #2ecc71; }
+.sobra { border-left: 5px solid #f1c40f; }
+.atrasado { border-left: 5px solid #c0392b; }
+</style>
+</head>
+<body>
+"""
+
+# 🔄 CONSTRUIR HTML
 for linha, datas in estrutura.items():
 
     if linha_sel != "Todas" and linha != linha_sel:
         continue
 
-    html += f"<h2>{linha}</h2>"
-    pdf_texto.append(f"\n{linha}")
+    html += f"<div class='linha'><h2>{linha}</h2>"
 
     for data, turnos in datas.items():
 
         if data_sel != "Todas" and data != data_sel:
             continue
 
-        html += f"<h3>{data}</h3>"
-        pdf_texto.append(f"  Data: {data}")
+        html += f"<h3>📅 {data}</h3>"
 
         for turno, itens in turnos.items():
 
             if turno_sel != "Todos" and turno != turno_sel:
                 continue
 
-            html += f"<b>Turno: {turno}</b><br>"
-            pdf_texto.append(f"    Turno: {turno}")
+            html += f"<b>Turno: {turno}</b><div class='cards'>"
 
             for item in itens:
-                linha_txt = f"{item.get('Produto')} | Ordem: {item.get('Ordem')} | Qtde: {item.get('Qtde Total')} | Status: {item.get('Status')}"
-                html += linha_txt + "<br>"
-                pdf_texto.append("      " + linha_txt)
+                status = item.get("Status", "").lower()
+
+                if "falta" in status:
+                    classe = "falta"
+                elif "sobra" in status:
+                    classe = "sobra"
+                elif "atras" in status:
+                    classe = "atrasado"
+                else:
+                    classe = "ok"
+
+                html += f"""
+                <div class='card {classe}'>
+                <b>{item.get("Produto")}</b><br>
+                Ordem: {item.get("Ordem")}<br>
+                Qtde: {item.get("Qtde Total")}<br>
+                Status: {item.get("Status")}
+                </div>
+                """
+
+            html += "</div>"
+
+    html += "</div>"
+
+html += "</body></html>"
 
 # 🚀 EXIBIR
-st.markdown(html, unsafe_allow_html=True)
-
-# 📄 GERAR PDF
-def gerar_pdf(texto_lista):
-    buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer)
-    styles = getSampleStyleSheet()
-
-    elementos = []
-
-    for linha in texto_lista:
-        elementos.append(Paragraph(linha, styles["Normal"]))
-        elementos.append(Spacer(1, 6))
-
-    doc.build(elementos)
-    buffer.seek(0)
-    return buffer
-
-pdf_file = gerar_pdf(pdf_texto)
-
-# 📥 BOTÃO DOWNLOAD
-colb4.download_button(
-    label="📄 Baixar PDF",
-    data=pdf_file,
-    file_name="planejamento_pcp.pdf",
-    mime="application/pdf"
-)
+st.components.v1.html(html, height=800, scrolling=True)
