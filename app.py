@@ -93,7 +93,7 @@ for item in dados_total:
 
     estrutura.setdefault(linha, {}).setdefault(data, {}).setdefault(turno, []).append(item)
 
-# 🔽 FILTROS
+# 🔽 FILTROS (LINHA DE CIMA)
 col1, col2, col3 = st.columns(3)
 
 linhas = sorted(set(nome_linha(i["Linha"]) for i in dados_total))
@@ -101,28 +101,26 @@ turnos = sorted(set(i["Turno"] for i in dados_total if i["Turno"]))
 
 linha_sel = col1.selectbox("🏭 Linha", ["Todas"] + linhas)
 
-# 📅 CONTROLE DE DATA LADO A LADO
-col_data1, col_data2, col_data3 = col2.columns([2,1,2])
-
-# estado
+# estado da data
 if "data_escolhida" not in st.session_state:
     st.session_state.data_escolhida = date.today()
 
-# calendário
-data_input = col_data1.date_input(
-    "Selecionar data",
-    value=st.session_state.data_escolhida
-)
+data_input = col2.date_input("📅 Selecionar data", value=st.session_state.data_escolhida)
+
+turno_sel = col3.selectbox("⏱ Turno", ["Todos"] + turnos)
+
+# 🔽 LINHA DE BAIXO (CONTROLES)
+colb1, colb2, colb3 = st.columns(3)
 
 # botão hoje
-if col_data2.button("Hoje"):
+if colb1.button("Hoje"):
     st.session_state.data_escolhida = date.today()
     data_input = date.today()
 
-# checkbox
-mostrar_todas = col_data3.checkbox("Todas as datas", value=False)
+# checkbox todas
+mostrar_todas = colb2.checkbox("Mostrar todas as datas", value=False)
 
-# regra
+# lógica
 if mostrar_todas:
     data_sel = "Todas"
 else:
@@ -130,9 +128,7 @@ else:
 
 # feedback
 if not mostrar_todas:
-    col2.caption(f"📍 Data ativa: {data_sel}")
-
-turno_sel = col3.selectbox("⏱ Turno", ["Todos"] + turnos)
+    colb3.caption(f"📍 Data ativa: {data_sel}")
 
 # 🔥 HTML
 html = """
