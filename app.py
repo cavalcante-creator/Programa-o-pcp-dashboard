@@ -73,7 +73,7 @@ def get_semana(data_str):
     except:
         return ""
 
-# 🔧 ORGANIZAÇÃO (AQUI FICA A CORREÇÃO!)
+# 🔧 ORGANIZAÇÃO
 estrutura = {}
 
 for item in dados_total:
@@ -109,7 +109,7 @@ if colb1.button("Hoje"):
 mostrar_todas = colb2.checkbox("Mostrar todas as datas", value=True)
 data_sel = data_input.strftime("%d/%m/%Y")
 
-# 🔥 HTML (AGORA NO LUGAR CERTO)
+# 🔥 HTML
 html = """
 <html>
 <head>
@@ -167,7 +167,7 @@ async function exportarTudo() {
 <div id="conteudo_total">
 """
 
-# 🔄 LOOP (AGORA FUNCIONA)
+# 🔄 LOOP
 for linha, datas in estrutura.items():
 
     if linha_sel != "Todas" and linha != linha_sel:
@@ -199,7 +199,9 @@ for linha, datas in estrutura.items():
                 <div class='card ok'>
                 <b>{item.get("Produto")}</b><br>
                 Ordem: {item.get("Ordem")}<br>
-                Qtde: {item.get("Qtde Total")}
+                Qtde: {item.get("Qtde Total")}<br>
+                Status: {item.get("Status","-")}<br>
+                Pendente: {item.get("Qtde Pendente","0")}
                 </div>
                 """
 
@@ -210,7 +212,10 @@ for linha, datas in estrutura.items():
     if tem:
         html += bloco
 
-html += "</div></body></html>"
+html += """
+</div>
+</body>
+</html>
+"""
 
-# 🚀 EXIBIR
-st.components.v1.html(html, height=2500, scrolling=True)
+st.components.v1.html(html, height=900, scrolling=True)
