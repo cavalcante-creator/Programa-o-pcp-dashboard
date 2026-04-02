@@ -101,11 +101,6 @@ turnos = sorted(set(i["Turno"] for i in dados_total if i["Turno"]))
 
 linha_sel = col1.selectbox("🏭 Linha", ["Todas"] + linhas)
 
-# estado da data
-if "data_escolhida" not in st.session_state:
-    st.session_state.data_escolhida = date.today()
-
-# 📅 CALENDÁRIO EM PORTUGUÊS (FORMATO BR)
 # 📅 LISTA DE DATAS DISPONÍVEIS
 datas_disponiveis = sorted(set(i.get("Data") for i in dados_total if i.get("Data")))
 
@@ -126,13 +121,12 @@ colb1, colb2, colb3 = st.columns(3)
 
 # botão hoje
 if colb1.button("Hoje"):
-    st.session_state.data_escolhida = date.today()
     datas_sel = [date.today().strftime("%d/%m/%Y")]
 
 # checkbox todas
 mostrar_todas = colb2.checkbox("Mostrar todas as datas", value=False)
 
-# lógica
+# lógica datas
 if mostrar_todas:
     datas_filtrar = datas_disponiveis
 else:
@@ -140,7 +134,7 @@ else:
 
 # feedback
 if not mostrar_todas:
-    colb3.caption(f"📍 Data ativa: {data_sel}")
+    colb3.caption(f"📍 Datas ativas: {', '.join(datas_filtrar)}")
 
 # 🔥 HTML
 html = """
@@ -197,14 +191,14 @@ for linha, datas in estrutura.items():
     for data, turnos in datas.items():
 
         if data not in datas_filtrar:
-    continue
+            continue
 
         html += f"<h3>📅 {data}</h3>"
 
         for turno, itens in turnos.items():
 
             if turno not in turno_sel:
-    continue
+                continue
 
             html += f"<b>Turno: {turno}</b><div class='cards'>"
 
@@ -236,4 +230,4 @@ for linha, datas in estrutura.items():
 html += "</body></html>"
 
 # 🚀 EXIBIR
-st.components.v1.html(html, height=2000, scrolling=True)
+st.components.v1.html(html, height=800, scrolling=True)
