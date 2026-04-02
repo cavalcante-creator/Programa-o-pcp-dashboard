@@ -10,6 +10,7 @@ st_autorefresh(interval=60000)
 
 st.set_page_config(layout="wide")
 st.title("📊 Planejamento PCP")
+st.image("https://raw.githubusercontent.com/cavalcante-creator/Programa-o-pcp-dashboard/main/COL_LOGO_8.png", width=200)
 
 sheet_id = "1eQHvLVw-WLsA4UruaM6GThcy0dgb5ONNAn8AZ_KwBuU"
 
