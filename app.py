@@ -3,54 +3,46 @@ from streamlit_autorefresh import st_autorefresh
 import requests
 import csv
 from io import StringIO
-from datetime import datetime
+from datetime import datetime, date
 
 # 🔄 Atualiza automático a cada 60s
 st_autorefresh(interval=60000)
 
 st.set_page_config(layout="wide")
-st.markdown("""
-    <style>
-    .block-container {
-    padding-top: 0.2rem;  /* sobe tudo */
-}
-    </style>
-""", unsafe_allow_html=True)
+
+# 🎨 ESTILO
 st.markdown("""
 <style>
 .block-container {
-    padding-top: 1rem;
+    padding-top: 0.2rem;
 }
 
-/* Container do topo */
+/* HEADER */
 .header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-top: -10px;   /* sobe a logo */
+    margin-top: -10px;
 }
 
-/* Logo esquerda */
 .logo {
-    width: 250px;  /* AUMENTA A LOGO */
+    width: 220px;
 }
 
 .titulo {
     flex-grow: 1;
     text-align: center;
-    font-size: 28px;
+    font-size: 26px;
     font-weight: 600;
-    margin: 0 auto;   /* garante centralização perfeita */
-}
 }
 
-/* Espaço direita (pra centralizar de verdade) */
 .vazio {
     width: 140px;
 }
 </style>
 """, unsafe_allow_html=True)
 
+# 🔝 HEADER
 st.markdown("""
 <div class="header">
     <img class="logo" src="https://raw.githubusercontent.com/cavalcante-creator/Programa-o-pcp-dashboard/main/COL_LOGO_8.png">
@@ -59,6 +51,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+# 🔗 GOOGLE SHEETS
 sheet_id = "1eQHvLVw-WLsA4UruaM6GThcy0dgb5ONNAn8AZ_KwBuU"
 
 abas = [
@@ -97,18 +90,28 @@ for item in dados_total:
 
     estrutura.setdefault(linha, {}).setdefault(data, {}).setdefault(turno, []).append(item)
 
-# 🔽 FILTROS STREAMLIT
+# 🔽 FILTROS
 col1, col2, col3 = st.columns(3)
 
 linhas = sorted(set(nome_linha(i["Linha"]) for i in dados_total))
-datas = sorted(set(i["Data"] for i in dados_total if i["Data"]))
 turnos = sorted(set(i["Turno"] for i in dados_total if i["Turno"]))
 
 linha_sel = col1.selectbox("Linha", ["Todas"] + linhas)
-data_sel = col2.selectbox("Data", ["Todas"] + datas)
 turno_sel = col3.selectbox("Turno", ["Todos"] + turnos)
 
-# 🔥 HTML (SEU LAYOUT ORIGINAL)
+# 📅 NOVO FILTRO DE DATA (CALENDÁRIO + HOJE)
+hoje = date.today()
+
+usar_hoje = col2.button("Hoje")
+
+data_escolhida = col2.date_input("Data", value=hoje)
+
+if usar_hoje:
+    data_sel = hoje.strftime("%d/%m/%Y")
+else:
+    data_sel = data_escolhida.strftime("%d/%m/%Y")
+
+# 🔥 HTML
 html = """
 <html>
 <head>
@@ -147,13 +150,12 @@ body {
 .ok { border-left: 5px solid #2ecc71; }
 .sobra { border-left: 5px solid #f1c40f; }
 .atrasado { border-left: 5px solid #c0392b; }
-
 </style>
 </head>
 <body>
 """
 
-# 🔄 CONSTRUIR HTML COM FILTRO
+# 🔄 CONSTRUIR HTML
 for linha, datas in estrutura.items():
 
     if linha_sel != "Todas" and linha != linha_sel:
@@ -163,7 +165,7 @@ for linha, datas in estrutura.items():
 
     for data, turnos in datas.items():
 
-        if data_sel != "Todas" and data != data_sel:
+        if data != data_sel:
             continue
 
         html += f"<h3>📅 {data}</h3>"
@@ -202,5 +204,5 @@ for linha, datas in estrutura.items():
 
 html += "</body></html>"
 
-# 🚀 MOSTRAR NA WEB
+# 🚀 EXIBIR
 st.components.v1.html(html, height=2000, scrolling=True)
