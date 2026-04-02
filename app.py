@@ -32,7 +32,7 @@ st.markdown("""
 
 /* Logo esquerda */
 .logo {
-    width: 300px;  /* AUMENTA A LOGO */
+    width: 250px;  /* AUMENTA A LOGO */
 }
 
 .titulo {
