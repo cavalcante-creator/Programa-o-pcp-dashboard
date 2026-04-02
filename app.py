@@ -9,6 +9,13 @@ from datetime import datetime
 st_autorefresh(interval=60000)
 
 st.set_page_config(layout="wide")
+st.markdown("""
+    <style>
+    .block-container {
+        padding-top: 1rem;
+    }
+    </style>
+""", unsafe_allow_html=True)
 st.title("📊 Planejamento PCP")
 st.image("https://raw.githubusercontent.com/cavalcante-creator/Programa-o-pcp-dashboard/main/COL_LOGO_8.png", width=200)
 
