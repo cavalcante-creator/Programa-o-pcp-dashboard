@@ -12,8 +12,8 @@ st.set_page_config(layout="wide")
 st.markdown("""
     <style>
     .block-container {
-        padding-top: 1rem;
-    }
+    padding-top: 0.2rem;  /* sobe tudo */
+}
     </style>
 """, unsafe_allow_html=True)
 st.markdown("""
@@ -27,6 +27,7 @@ st.markdown("""
     display: flex;
     align-items: center;
     justify-content: space-between;
+    margin-top: -10px;   /* sobe a logo */
 }
 
 /* Logo esquerda */
@@ -37,8 +38,9 @@ st.markdown("""
 .titulo {
     flex-grow: 1;
     text-align: center;
-    font-size: 28px;  /* DIMINUI O TÍTULO */
+    font-size: 28px;
     font-weight: 600;
+    margin: 0 auto;   /* garante centralização perfeita */
 }
 }
 
