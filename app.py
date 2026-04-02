@@ -16,8 +16,46 @@ st.markdown("""
     }
     </style>
 """, unsafe_allow_html=True)
-st.title("📊 Planejamento PCP")
-st.image("https://raw.githubusercontent.com/cavalcante-creator/Programa-o-pcp-dashboard/main/COL_LOGO_8.png", width=200)
+st.markdown("""
+<style>
+.block-container {
+    padding-top: 1rem;
+}
+
+/* Container do topo */
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* Logo esquerda */
+.logo {
+    width: 140px;
+}
+
+/* Título central */
+.titulo {
+    flex-grow: 1;
+    text-align: center;
+    font-size: 36px;
+    font-weight: 600;
+}
+
+/* Espaço direita (pra centralizar de verdade) */
+.vazio {
+    width: 140px;
+}
+</style>
+""", unsafe_allow_html=True)
+
+st.markdown("""
+<div class="header">
+    <img class="logo" src="https://raw.githubusercontent.com/cavalcante-creator/Programa-o-pcp-dashboard/main/COL_LOGO_8.png">
+    <div class="titulo">📊 Planejamento PCP</div>
+    <div class="vazio"></div>
+</div>
+""", unsafe_allow_html=True)
 
 sheet_id = "1eQHvLVw-WLsA4UruaM6GThcy0dgb5ONNAn8AZ_KwBuU"
 
