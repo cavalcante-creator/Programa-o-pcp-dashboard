@@ -5,12 +5,12 @@ import csv
 from io import StringIO
 from datetime import datetime, date
 
-# 🔄 Atualiza automático a cada 60s
+# 🔄 Auto refresh
 st_autorefresh(interval=60000)
 
 st.set_page_config(layout="wide")
 
-# 🎨 AJUSTE DE ESPAÇO
+# 🎨 ESPAÇO
 st.markdown("""
 <style>
 .block-container {
@@ -22,11 +22,6 @@ st.markdown("""
 # 🎨 HEADER
 st.markdown("""
 <style>
-.block-container {
-    padding-top: 1rem;
-}
-
-/* Container do topo */
 .header {
     display: flex;
     align-items: center;
@@ -34,28 +29,23 @@ st.markdown("""
     margin-top: -10px;
 }
 
-/* Logo esquerda */
 .logo {
     width: 300px;
 }
 
-/* Título central */
 .titulo {
     flex-grow: 1;
     text-align: center;
-    font-size: 28px;
+    font-size: 26px;
     font-weight: 600;
-    margin: 0 auto;
 }
 
-/* Espaço direita */
 .vazio {
     width: 140px;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# 🔝 HEADER
 st.markdown("""
 <div class="header">
     <img class="logo" src="https://raw.githubusercontent.com/cavalcante-creator/Programa-o-pcp-dashboard/main/COL_LOGO_8.png">
@@ -109,19 +99,30 @@ col1, col2, col3 = st.columns(3)
 linhas = sorted(set(nome_linha(i["Linha"]) for i in dados_total))
 turnos = sorted(set(i["Turno"] for i in dados_total if i["Turno"]))
 
-linha_sel = col1.selectbox("Linha", ["Todas"] + linhas)
+linha_sel = col1.selectbox("🏭 Linha", ["Todas"] + linhas)
 
-# 📅 FILTRO SIMPLES E LIMPO
-mostrar_todas = col2.checkbox("Mostrar todas as datas", value=True)
+# 📅 DATA INTELIGENTE
+if "data_escolhida" not in st.session_state:
+    st.session_state.data_escolhida = date.today()
 
-data_input = col2.date_input("Selecionar data", value=date.today())
+data_input = col2.date_input("📅 Selecionar data", value=st.session_state.data_escolhida)
+
+if col2.button("Hoje"):
+    st.session_state.data_escolhida = date.today()
+    data_input = date.today()
+
+mostrar_todas = col2.checkbox("Mostrar todas as datas", value=False)
 
 if mostrar_todas:
     data_sel = "Todas"
 else:
     data_sel = data_input.strftime("%d/%m/%Y")
 
-turno_sel = col3.selectbox("Turno", ["Todos"] + turnos)
+# 🔔 Feedback visual
+if not mostrar_todas:
+    col2.caption(f"📍 Exibindo: {data_sel}")
+
+turno_sel = col3.selectbox("⏱ Turno", ["Todos"] + turnos)
 
 # 🔥 HTML
 html = """
