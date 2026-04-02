@@ -10,81 +10,38 @@ st_autorefresh(interval=60000)
 
 st.set_page_config(layout="wide")
 
-# 🎨 ESTILO + HEADER
+# 🎨 ESPAÇO
 st.markdown("""
 <style>
-.block-container { padding-top: 0.5rem; }
+.block-container {
+    padding-top: 0.2rem;
+}
+</style>
+""", unsafe_allow_html=True)
 
+# 🎨 HEADER
+st.markdown("""
+<style>
 .header {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    margin-top: -10px;
 }
 
-.logo { width: 180px; }
+.logo {
+    width: 200px;
+}
 
 .titulo {
     flex-grow: 1;
     text-align: center;
-    font-size: 28px;
+    font-size: 26px;
     font-weight: 600;
 }
 
-/* DIA */
-.dia {
-    margin-bottom: 30px;
-}
-
-.dia h2 {
-    background: #2c3e50;
-    color: white;
-    padding: 10px;
-    border-radius: 8px;
-}
-
-/* 🔥 BLOCO LINHA */
-.linha {
-    margin-top: 15px;
-    padding: 12px;
-    background: #ffffff;
-    border-radius: 10px;
-    border: 1px solid #dcdcdc;
-    box-shadow: 0px 2px 8px rgba(0,0,0,0.05);
-}
-
-.linha h4 {
-    margin-bottom: 10px;
-    font-size: 16px;
-    color: #2c3e50;
-    border-left: 5px solid #2c3e50;
-    padding-left: 8px;
-}
-
-/* CARDS */
-.cards {
-    display: flex;
-    flex-wrap: wrap;
-}
-
-.card {
-    width: 230px;
-    padding: 10px;
-    margin: 6px;
-    border-radius: 10px;
-    background: #fdfdfd;
-    box-shadow: 0px 3px 10px rgba(0,0,0,0.08);
-    border-left: 5px solid transparent;
-    font-size: 13px;
-}
-
-.falta { border-left: 5px solid #e74c3c; }
-.ok { border-left: 5px solid #2ecc71; }
-.sobra { border-left: 5px solid #f1c40f; }
-.atrasado { border-left: 5px solid #c0392b; }
-
-/* PRINT */
-@media print {
-    body { background: white; }
+.vazio {
+    width: 140px;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -92,8 +49,8 @@ st.markdown("""
 st.markdown("""
 <div class="header">
     <img class="logo" src="https://raw.githubusercontent.com/cavalcante-creator/Programa-o-pcp-dashboard/main/COL_LOGO_8.png">
-    <div class="titulo">Planejamento PCP</div>
-    <div style="width:140px;"></div>
+    <div class="titulo"> Planejamento PCP</div>
+    <div class="vazio"></div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -101,13 +58,18 @@ st.markdown("""
 sheet_id = "1eQHvLVw-WLsA4UruaM6GThcy0dgb5ONNAn8AZ_KwBuU"
 
 abas = [
-    "BASE_LINHA_1","BASE_LINHA_2","BASE_LINHA_3",
+    "BASE_LINHA_1",
+    "BASE_LINHA_2",
+    "BASE_LINHA_3",
     "BASE_AREA_LIQUIDA",
-    "BASE_REJUNTE_MAQUINA_1","BASE_REJUNTE_MAQUINA_2","BASE_REJUNTE_MAQUINA_3"
+    "BASE_REJUNTE_MAQUINA_1",
+    "BASE_REJUNTE_MAQUINA_2",
+    "BASE_REJUNTE_MAQUINA_3"
 ]
 
 dados_total = []
 
+# 🔄 BUSCAR DADOS
 for aba in abas:
     url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/gviz/tq?tqx=out:csv&sheet={aba}"
     response = requests.get(url)
@@ -130,15 +92,15 @@ def get_semana(data_str):
     except:
         return ""
 
-# 🔧 ESTRUTURA
+# 🔧 ORGANIZAÇÃO
 estrutura = {}
 
 for item in dados_total:
-    data = item.get("Data", "")
     linha = nome_linha(item["Linha"])
+    data = item.get("Data", "")
     turno = item.get("Turno", "Sem Turno")
 
-    estrutura.setdefault(data, {}).setdefault(linha, {}).setdefault(turno, []).append(item)
+    estrutura.setdefault(linha, {}).setdefault(data, {}).setdefault(turno, []).append(item)
 
 # 🔽 FILTROS
 col1, col2, col3, col4 = st.columns(4)
@@ -151,80 +113,144 @@ linha_sel = col1.selectbox("🏭 Linha", ["Todas"] + linhas)
 if "data_escolhida" not in st.session_state:
     st.session_state.data_escolhida = date.today()
 
-data_input = col2.date_input("📅 Data", st.session_state.data_escolhida, format="DD/MM/YYYY")
+data_input = col2.date_input(
+    "📅 Selecionar data",
+    value=st.session_state.data_escolhida,
+    format="DD/MM/YYYY"
+)
 
 turno_sel = col3.selectbox("⏱ Turno", ["Todos"] + turnos)
 
-semanas_disponiveis = sorted(set(get_semana(i.get("Data")) for i in dados_total if i.get("Data")))
+# 📆 SEMANAS (NOVO)
+semanas_disponiveis = sorted(
+    set(get_semana(i.get("Data")) for i in dados_total if i.get("Data"))
+)
 semanas_sel = col4.multiselect("📆 Semanas", semanas_disponiveis)
 
-mostrar_todas = st.checkbox("Mostrar todas as datas", value=True)
+# 🔽 LINHA DE BAIXO
+colb1, colb2, colb3 = st.columns(3)
+
+if colb1.button("Hoje"):
+    st.session_state.data_escolhida = date.today()
+    data_input = date.today()
+
+mostrar_todas = colb2.checkbox("Mostrar todas as datas", value=True)
 
 data_sel = data_input.strftime("%d/%m/%Y")
 
-# 🔥 HTML FINAL
-html = "<html><body>"
+if not mostrar_todas:
+    colb3.caption(f"📍 Data ativa: {data_sel}")
 
-for data, linhas_dict in sorted(estrutura.items()):
+# 🔥 HTML (VISUAL ORIGINAL)
+html = """
+<html>
+<head>
+<style>
+body {
+    font-family: 'Segoe UI', Arial;
+    background: #f5f7fa;
+    margin: 20px;
+}
 
-    if not mostrar_todas and data != data_sel:
+.linha h2 {
+    background: #2c3e50;
+    color: white;
+    padding: 10px;
+    border-radius: 8px;
+    font-weight: 500;
+}
+
+.cards {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.card {
+    width: 260px;
+    padding: 12px;
+    margin: 8px;
+    border-radius: 12px;
+    font-size: 13px;
+    background: white;
+    box-shadow: 0px 4px 12px rgba(0,0,0,0.08);
+    border-left: 5px solid transparent;
+}
+
+.falta { border-left: 5px solid #e74c3c; }
+.ok { border-left: 5px solid #2ecc71; }
+.sobra { border-left: 5px solid #f1c40f; }
+.atrasado { border-left: 5px solid #c0392b; }
+</style>
+</head>
+<body>
+"""
+
+# 🔄 LOOP
+for linha, datas in estrutura.items():
+
+    if linha_sel != "Todas" and linha != linha_sel:
         continue
 
-    if semanas_sel and get_semana(data) not in semanas_sel:
-        continue
+    bloco_linha = f"<div class='linha'><h2>{linha}</h2>"
+    tem_conteudo_linha = False
 
-    bloco_dia = f"<div class='dia'><h2>📅 {data}</h2>"
-    tem_conteudo = False
+    for data, turnos in datas.items():
 
-    for linha, turnos_dict in linhas_dict.items():
-
-        if linha_sel != "Todas" and linha != linha_sel:
+        # filtro semana
+        if semanas_sel and get_semana(data) not in semanas_sel:
             continue
 
-        cards_html = ""
-        tem_linha = False
+        # filtro data
+        if not mostrar_todas and data != data_sel:
+            continue
 
-        for turno, itens in turnos_dict.items():
+        tem_conteudo_data = False
+        bloco_data = f"<h3>📅 {data}</h3>"
+
+        for turno, itens in turnos.items():
 
             if turno_sel != "Todos" and turno != turno_sel:
                 continue
 
+            cards_html = ""
+            tem_turno = False
+
             for item in itens:
-                tem_conteudo = True
-                tem_linha = True
+                tem_turno = True
 
                 status = item.get("Status", "").lower()
 
-                classe = "ok"
                 if "falta" in status:
                     classe = "falta"
                 elif "sobra" in status:
                     classe = "sobra"
                 elif "atras" in status:
                     classe = "atrasado"
+                else:
+                    classe = "ok"
 
                 cards_html += f"""
                 <div class='card {classe}'>
-                    <b>{item.get("Produto")}</b><br>
-                    Ordem: {item.get("Ordem")}<br>
-                    Qtde: {item.get("Qtde Total")}
+                <b>{item.get("Produto")}</b><br>
+                Ordem: {item.get("Ordem")}<br>
+                Qtde: {item.get("Qtde Total")}<br>
+                Status: {item.get("Status")}
                 </div>
                 """
 
-        if tem_linha:
-            bloco_dia += f"""
-            <div class='linha'>
-                <h4>{linha}</h4>
-                <div class='cards'>
-                    {cards_html}
-                </div>
-            </div>
-            """
+            if tem_turno:
+                tem_conteudo_data = True
+                bloco_data += f"<b>Turno: {turno}</b><div class='cards'>{cards_html}</div>"
 
-    bloco_dia += "</div>"
+        if tem_conteudo_data:
+            tem_conteudo_linha = True
+            bloco_linha += bloco_data
 
-    if tem_conteudo:
-        html += bloco_dia
+    bloco_linha += "</div>"
+
+    # 🔥 NÃO MOSTRA LINHA VAZIA
+    if tem_conteudo_linha:
+        html += bloco_linha
 
 html += "</body></html>"
 
