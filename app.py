@@ -3,7 +3,7 @@ from streamlit_autorefresh import st_autorefresh
 import requests
 import csv
 from io import StringIO
-from datetime import datetime, date
+from datetime import datetime
 
 # 🔄 Atualiza automático a cada 60s
 st_autorefresh(interval=60000)
@@ -107,15 +107,11 @@ for item in dados_total:
 col1, col2, col3 = st.columns(3)
 
 linhas = sorted(set(nome_linha(i["Linha"]) for i in dados_total))
+datas = sorted(set(i["Data"] for i in dados_total if i["Data"]))
 turnos = sorted(set(i["Turno"] for i in dados_total if i["Turno"]))
 
 linha_sel = col1.selectbox("Linha", ["Todas"] + linhas)
-
-# 📅 CALENDÁRIO (AQUI ESTÁ A MUDANÇA)
-hoje = date.today()
-data_input = col2.date_input("Data", value=hoje)
-data_sel = data_input.strftime("%d/%m/%Y")
-
+data_sel = col2.selectbox("Data", ["Todas"] + datas)
 turno_sel = col3.selectbox("Turno", ["Todos"] + turnos)
 
 # 🔥 HTML
