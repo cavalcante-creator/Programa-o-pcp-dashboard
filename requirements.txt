@@ -1,4 +1,5 @@
 streamlit
 streamlit-autorefresh
 requests
-reportlab
+html2image
+pillow
