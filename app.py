@@ -55,7 +55,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 🔝 HEADER HTML
+# 🔝 HEADER
 st.markdown("""
 <div class="header">
     <img class="logo" src="https://raw.githubusercontent.com/cavalcante-creator/Programa-o-pcp-dashboard/main/COL_LOGO_8.png">
@@ -107,15 +107,19 @@ for item in dados_total:
 col1, col2, col3 = st.columns(3)
 
 linhas = sorted(set(nome_linha(i["Linha"]) for i in dados_total))
-datas = sorted(set(i["Data"] for i in dados_total if i["Data"]))  # 👈 mantido igual antes
+datas = sorted(set(i["Data"] for i in dados_total if i["Data"]))
 turnos = sorted(set(i["Turno"] for i in dados_total if i["Turno"]))
 
 linha_sel = col1.selectbox("Linha", ["Todas"] + linhas)
 
-# 📅 CALENDÁRIO (única mudança)
-hoje = date.today()
-data_input = col2.date_input("Data", value=hoje)
-data_sel = data_input.strftime("%d/%m/%Y")
+# 📅 FILTRO PERFEITO (TODAS + CALENDÁRIO)
+modo_data = col2.radio("Data", ["Todas", "Escolher"], horizontal=True)
+
+if modo_data == "Todas":
+    data_sel = "Todas"
+else:
+    data_input = col2.date_input("Selecionar data", value=date.today())
+    data_sel = data_input.strftime("%d/%m/%Y")
 
 turno_sel = col3.selectbox("Turno", ["Todos"] + turnos)
 
