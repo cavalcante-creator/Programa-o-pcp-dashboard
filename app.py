@@ -105,11 +105,16 @@ linha_sel = col1.selectbox("🏭 Linha", ["Todas"] + linhas)
 if "data_escolhida" not in st.session_state:
     st.session_state.data_escolhida = date.today()
 
-data_input = col2.date_input("📅 Selecionar data", value=st.session_state.data_escolhida)
+# 📅 CALENDÁRIO EM PORTUGUÊS (FORMATO BR)
+data_input = col2.date_input(
+    "📅 Selecionar data",
+    value=st.session_state.data_escolhida,
+    format="DD/MM/YYYY"
+)
 
 turno_sel = col3.selectbox("⏱ Turno", ["Todos"] + turnos)
 
-# 🔽 LINHA DE BAIXO (CONTROLES)
+# 🔽 LINHA DE BAIXO
 colb1, colb2, colb3 = st.columns(3)
 
 # botão hoje
