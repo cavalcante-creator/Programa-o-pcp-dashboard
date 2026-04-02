@@ -101,40 +101,39 @@ turnos = sorted(set(i["Turno"] for i in dados_total if i["Turno"]))
 
 linha_sel = col1.selectbox("🏭 Linha", ["Todas"] + linhas)
 
-# 📅 LISTA DE DATAS DISPONÍVEIS
-datas_disponiveis = sorted(set(i.get("Data") for i in dados_total if i.get("Data")))
+# estado da data
+if "data_escolhida" not in st.session_state:
+    st.session_state.data_escolhida = date.today()
 
-datas_sel = col2.multiselect(
-    "📅 Selecionar datas",
-    options=datas_disponiveis,
-    default=[datetime.today().strftime("%d/%m/%Y")]
+# 📅 CALENDÁRIO EM PORTUGUÊS (FORMATO BR)
+data_input = col2.date_input(
+    "📅 Selecionar data",
+    value=st.session_state.data_escolhida,
+    format="DD/MM/YYYY"
 )
 
-turno_sel = col3.multiselect(
-    "⏱ Turno",
-    options=turnos,
-    default=turnos
-)
+turno_sel = col3.selectbox("⏱ Turno", ["Todos"] + turnos)
 
 # 🔽 LINHA DE BAIXO
 colb1, colb2, colb3 = st.columns(3)
 
 # botão hoje
 if colb1.button("Hoje"):
-    datas_sel = [date.today().strftime("%d/%m/%Y")]
+    st.session_state.data_escolhida = date.today()
+    data_input = date.today()
 
 # checkbox todas
 mostrar_todas = colb2.checkbox("Mostrar todas as datas", value=False)
 
-# lógica datas
+# lógica
 if mostrar_todas:
-    datas_filtrar = datas_disponiveis
+    data_sel = "Todas"
 else:
-    datas_filtrar = datas_sel
+    data_sel = data_input.strftime("%d/%m/%Y")
 
 # feedback
 if not mostrar_todas:
-    colb3.caption(f"📍 Datas ativas: {', '.join(datas_filtrar)}")
+    colb3.caption(f"📍 Data ativa: {data_sel}")
 
 # 🔥 HTML
 html = """
@@ -190,14 +189,14 @@ for linha, datas in estrutura.items():
 
     for data, turnos in datas.items():
 
-        if data not in datas_filtrar:
+        if data_sel != "Todas" and data != data_sel:
             continue
 
         html += f"<h3>📅 {data}</h3>"
 
         for turno, itens in turnos.items():
 
-            if turno not in turno_sel:
+            if turno_sel != "Todos" and turno != turno_sel:
                 continue
 
             html += f"<b>Turno: {turno}</b><div class='cards'>"
