@@ -30,7 +30,10 @@ st.markdown("""
     font-weight: 600;
 }
 
-.dia { margin-bottom: 30px; }
+/* DIA */
+.dia {
+    margin-bottom: 30px;
+}
 
 .dia h2 {
     background: #2c3e50;
@@ -39,19 +42,36 @@ st.markdown("""
     border-radius: 8px;
 }
 
-.linha { margin-top: 10px; }
+/* 🔥 BLOCO LINHA */
+.linha {
+    margin-top: 15px;
+    padding: 12px;
+    background: #ffffff;
+    border-radius: 10px;
+    border: 1px solid #dcdcdc;
+    box-shadow: 0px 2px 8px rgba(0,0,0,0.05);
+}
 
+.linha h4 {
+    margin-bottom: 10px;
+    font-size: 16px;
+    color: #2c3e50;
+    border-left: 5px solid #2c3e50;
+    padding-left: 8px;
+}
+
+/* CARDS */
 .cards {
     display: flex;
     flex-wrap: wrap;
 }
 
 .card {
-    width: 240px;
+    width: 230px;
     padding: 10px;
     margin: 6px;
     border-radius: 10px;
-    background: white;
+    background: #fdfdfd;
     box-shadow: 0px 3px 10px rgba(0,0,0,0.08);
     border-left: 5px solid transparent;
     font-size: 13px;
@@ -62,6 +82,7 @@ st.markdown("""
 .sobra { border-left: 5px solid #f1c40f; }
 .atrasado { border-left: 5px solid #c0392b; }
 
+/* PRINT */
 @media print {
     body { background: white; }
 }
@@ -191,7 +212,14 @@ for data, linhas_dict in sorted(estrutura.items()):
                 """
 
         if tem_linha:
-            bloco_dia += f"<div class='linha'><h4>{linha}</h4><div class='cards'>{cards_html}</div></div>"
+            bloco_dia += f"""
+            <div class='linha'>
+                <h4>{linha}</h4>
+                <div class='cards'>
+                    {cards_html}
+                </div>
+            </div>
+            """
 
     bloco_dia += "</div>"
 
