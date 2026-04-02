@@ -20,7 +20,7 @@ st.markdown("""
     justify-content: space-between;
 }
 
-.logo { width: 250px; }
+.logo { width: 150px; }
 
 .titulo {
     flex-grow: 1;
