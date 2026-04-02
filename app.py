@@ -3,21 +3,30 @@ from streamlit_autorefresh import st_autorefresh
 import requests
 import csv
 from io import StringIO
-from datetime import datetime, date
+from datetime import datetime
 
 # 🔄 Atualiza automático a cada 60s
 st_autorefresh(interval=60000)
 
 st.set_page_config(layout="wide")
 
-# 🎨 ESTILO
+# 🎨 AJUSTE DE ESPAÇO
 st.markdown("""
 <style>
 .block-container {
     padding-top: 0.2rem;
 }
+</style>
+""", unsafe_allow_html=True)
 
-/* HEADER */
+# 🎨 HEADER
+st.markdown("""
+<style>
+.block-container {
+    padding-top: 1rem;
+}
+
+/* Container do topo */
 .header {
     display: flex;
     align-items: center;
@@ -25,24 +34,28 @@ st.markdown("""
     margin-top: -10px;
 }
 
+/* Logo esquerda */
 .logo {
-    width: 220px;
+    width: 300px;
 }
 
+/* Título central */
 .titulo {
     flex-grow: 1;
     text-align: center;
-    font-size: 26px;
+    font-size: 28px;
     font-weight: 600;
+    margin: 0 auto;
 }
 
+/* Espaço direita */
 .vazio {
     width: 140px;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# 🔝 HEADER
+# 🔝 HEADER HTML
 st.markdown("""
 <div class="header">
     <img class="logo" src="https://raw.githubusercontent.com/cavalcante-creator/Programa-o-pcp-dashboard/main/COL_LOGO_8.png">
@@ -94,22 +107,12 @@ for item in dados_total:
 col1, col2, col3 = st.columns(3)
 
 linhas = sorted(set(nome_linha(i["Linha"]) for i in dados_total))
+datas = sorted(set(i["Data"] for i in dados_total if i["Data"]))
 turnos = sorted(set(i["Turno"] for i in dados_total if i["Turno"]))
 
 linha_sel = col1.selectbox("Linha", ["Todas"] + linhas)
+data_sel = col2.selectbox("Data", ["Todas"] + datas)
 turno_sel = col3.selectbox("Turno", ["Todos"] + turnos)
-
-# 📅 NOVO FILTRO DE DATA (CALENDÁRIO + HOJE)
-hoje = date.today()
-
-usar_hoje = col2.button("Hoje")
-
-data_escolhida = col2.date_input("Data", value=hoje)
-
-if usar_hoje:
-    data_sel = hoje.strftime("%d/%m/%Y")
-else:
-    data_sel = data_escolhida.strftime("%d/%m/%Y")
 
 # 🔥 HTML
 html = """
@@ -165,7 +168,7 @@ for linha, datas in estrutura.items():
 
     for data, turnos in datas.items():
 
-        if data != data_sel:
+        if data_sel != "Todas" and data != data_sel:
             continue
 
         html += f"<h3>📅 {data}</h3>"
