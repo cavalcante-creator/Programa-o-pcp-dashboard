@@ -49,7 +49,7 @@ st.markdown("""
 st.markdown("""
 <div class="header">
     <img class="logo" src="https://raw.githubusercontent.com/cavalcante-creator/Programa-o-pcp-dashboard/main/COL_LOGO_8.png">
-    <div class="titulo">📊 Planejamento PCP</div>
+    <div class="titulo"> Planejamento PCP</div>
     <div class="vazio"></div>
 </div>
 """, unsafe_allow_html=True)
