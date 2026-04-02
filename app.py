@@ -4,34 +4,25 @@ import requests
 import csv
 from io import StringIO
 from datetime import datetime, date
+import base64
 
 # 🔄 Auto refresh
 st_autorefresh(interval=60000)
 
 st.set_page_config(layout="wide")
 
-# 🎨 ESPAÇO
-st.markdown("""
-<style>
-.block-container {
-    padding-top: 0.2rem;
-}
-</style>
-""", unsafe_allow_html=True)
-
 # 🎨 HEADER
 st.markdown("""
 <style>
+.block-container { padding-top: 0.2rem; }
+
 .header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-top: -10px;
 }
 
-.logo {
-    width: 200px;
-}
+.logo { width: 180px; }
 
 .titulo {
     flex-grow: 1;
@@ -39,17 +30,14 @@ st.markdown("""
     font-size: 26px;
     font-weight: 600;
 }
-
-.vazio {
-    width: 140px;
-}
+.vazio { width: 140px; }
 </style>
 """, unsafe_allow_html=True)
 
 st.markdown("""
 <div class="header">
     <img class="logo" src="https://raw.githubusercontent.com/cavalcante-creator/Programa-o-pcp-dashboard/main/COL_LOGO_8.png">
-    <div class="titulo"> Planejamento PCP</div>
+    <div class="titulo">Planejamento PCP</div>
     <div class="vazio"></div>
 </div>
 """, unsafe_allow_html=True)
@@ -58,18 +46,13 @@ st.markdown("""
 sheet_id = "1eQHvLVw-WLsA4UruaM6GThcy0dgb5ONNAn8AZ_KwBuU"
 
 abas = [
-    "BASE_LINHA_1",
-    "BASE_LINHA_2",
-    "BASE_LINHA_3",
+    "BASE_LINHA_1","BASE_LINHA_2","BASE_LINHA_3",
     "BASE_AREA_LIQUIDA",
-    "BASE_REJUNTE_MAQUINA_1",
-    "BASE_REJUNTE_MAQUINA_2",
-    "BASE_REJUNTE_MAQUINA_3"
+    "BASE_REJUNTE_MAQUINA_1","BASE_REJUNTE_MAQUINA_2","BASE_REJUNTE_MAQUINA_3"
 ]
 
 dados_total = []
 
-# 🔄 BUSCAR DADOS
 for aba in abas:
     url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/gviz/tq?tqx=out:csv&sheet={aba}"
     response = requests.get(url)
@@ -80,21 +63,20 @@ for aba in abas:
         linha["Linha"] = aba
         dados_total.append(linha)
 
-# 🔧 ORGANIZAÇÃO
+# 🔧 FUNÇÕES
 def nome_linha(linha):
     return linha.replace("BASE_", "").replace("_", " ")
 
-# 📆 FUNÇÃO SEMANA
 def get_semana(data_str):
     try:
         dt = datetime.strptime(data_str, "%d/%m/%Y")
         ano, semana, _ = dt.isocalendar()
         return f"Semana {semana}/{ano}"
     except:
-        return "Sem data"
+        return ""
 
+# 🔧 ESTRUTURA
 estrutura = {}
-
 for item in dados_total:
     linha = nome_linha(item["Linha"])
     data = item.get("Data", "")
@@ -113,19 +95,11 @@ linha_sel = col1.selectbox("🏭 Linha", ["Todas"] + linhas)
 if "data_escolhida" not in st.session_state:
     st.session_state.data_escolhida = date.today()
 
-data_input = col2.date_input(
-    "📅 Selecionar data",
-    value=st.session_state.data_escolhida,
-    format="DD/MM/YYYY"
-)
+data_input = col2.date_input("📅 Data", st.session_state.data_escolhida, format="DD/MM/YYYY")
 
 turno_sel = col3.selectbox("⏱ Turno", ["Todos"] + turnos)
 
-# 📆 SEMANAS
-semanas_disponiveis = sorted(
-    set(get_semana(i.get("Data")) for i in dados_total if i.get("Data"))
-)
-
+semanas_disponiveis = sorted(set(get_semana(i.get("Data")) for i in dados_total if i.get("Data")))
 semanas_sel = col4.multiselect("📆 Semanas", semanas_disponiveis)
 
 # 🔽 LINHA DE BAIXO
@@ -135,66 +109,46 @@ if colb1.button("Hoje"):
     st.session_state.data_escolhida = date.today()
     data_input = date.today()
 
-mostrar_todas = colb2.checkbox("Mostrar todas as datas", value=False)
+mostrar_todas = colb2.checkbox("Mostrar todas", False)
 
-if mostrar_todas:
-    data_sel = "Todas"
-else:
-    data_sel = data_input.strftime("%d/%m/%Y")
+data_sel = "Todas" if mostrar_todas else data_input.strftime("%d/%m/%Y")
 
-if not mostrar_todas:
-    colb3.caption(f"📍 Data ativa: {data_sel}")
-
-# 🖨️ BOTÃO PDF
-colb4.markdown("""
-<button onclick="window.print()" style="
-    background-color:#2c3e50;
-    color:white;
-    border:none;
-    padding:8px 16px;
-    border-radius:8px;
-    cursor:pointer;">
-🖨️ Exportar PDF
-</button>
-""", unsafe_allow_html=True)
-
-# 🔥 HTML
+# 🔥 HTML PRINCIPAL
 html = """
 <html>
 <head>
 <style>
-body {
-    font-family: 'Segoe UI', Arial;
-    background: #f5f7fa;
-    margin: 20px;
-}
+body { font-family: Arial; background:#f5f7fa; }
+
+.linha { page-break-inside: avoid; }
 
 .linha h2 {
-    background: #2c3e50;
-    color: white;
-    padding: 10px;
-    border-radius: 8px;
-}
-
-.cards {
-    display: flex;
-    flex-wrap: wrap;
+    background:#2c3e50;
+    color:white;
+    padding:8px;
+    border-radius:6px;
 }
 
 .card {
-    width: 260px;
-    padding: 12px;
-    margin: 8px;
-    border-radius: 12px;
-    background: white;
-    box-shadow: 0px 4px 12px rgba(0,0,0,0.08);
-    border-left: 5px solid transparent;
+    display:inline-block;
+    width:250px;
+    margin:6px;
+    padding:10px;
+    border-radius:10px;
+    background:white;
+    box-shadow:0 3px 10px rgba(0,0,0,0.1);
 }
 
-.falta { border-left: 5px solid #e74c3c; }
-.ok { border-left: 5px solid #2ecc71; }
-.sobra { border-left: 5px solid #f1c40f; }
-.atrasado { border-left: 5px solid #c0392b; }
+.falta { border-left:5px solid red; }
+.ok { border-left:5px solid green; }
+.sobra { border-left:5px solid orange; }
+.atrasado { border-left:5px solid darkred; }
+
+/* 🖨️ MODO IMPRESSÃO */
+@media print {
+    button { display:none; }
+    body { background:white; }
+}
 </style>
 </head>
 <body>
@@ -210,35 +164,26 @@ for linha, datas in estrutura.items():
 
     for data, turnos in datas.items():
 
-        # filtro semana
-        semana_item = get_semana(data)
-        if semanas_sel and semana_item not in semanas_sel:
+        if semanas_sel and get_semana(data) not in semanas_sel:
             continue
 
-        # filtro data
         if data_sel != "Todas" and data != data_sel:
             continue
 
-        html += f"<h3>📅 {data}</h3>"
+        html += f"<h4>{data}</h4>"
 
         for turno, itens in turnos.items():
 
             if turno_sel != "Todos" and turno != turno_sel:
                 continue
 
-            html += f"<b>Turno: {turno}</b><div class='cards'>"
-
             for item in itens:
-                status = item.get("Status", "").lower()
+                status = item.get("Status","").lower()
 
-                if "falta" in status:
-                    classe = "falta"
-                elif "sobra" in status:
-                    classe = "sobra"
-                elif "atras" in status:
-                    classe = "atrasado"
-                else:
-                    classe = "ok"
+                classe = "ok"
+                if "falta" in status: classe="falta"
+                elif "sobra" in status: classe="sobra"
+                elif "atras" in status: classe="atrasado"
 
                 html += f"""
                 <div class='card {classe}'>
@@ -249,11 +194,28 @@ for linha, datas in estrutura.items():
                 </div>
                 """
 
-            html += "</div>"
-
     html += "</div>"
 
 html += "</body></html>"
 
 # 🚀 EXIBIR
 st.components.v1.html(html, height=800, scrolling=True)
+
+# 🖨️ EXPORTAR PDF (PROFISSIONAL)
+if colb4.button("📄 Exportar PDF"):
+    html_print = f"""
+    <html>
+    <head>
+        <script>
+            window.onload = function() {{
+                window.print();
+            }}
+        </script>
+    </head>
+    {html}
+    </html>
+    """
+
+    b64 = base64.b64encode(html_print.encode()).decode()
+    href = f'<a href="data:text/html;base64,{b64}" target="_blank">Clique aqui para abrir o PDF</a>'
+    st.markdown(href, unsafe_allow_html=True)
