@@ -31,15 +31,15 @@ st.markdown("""
 
 /* Logo esquerda */
 .logo {
-    width: 140px;
+    width: 200px;  /* AUMENTA A LOGO */
 }
 
-/* Título central */
 .titulo {
     flex-grow: 1;
     text-align: center;
-    font-size: 36px;
+    font-size: 28px;  /* DIMINUI O TÍTULO */
     font-weight: 600;
+}
 }
 
 /* Espaço direita (pra centralizar de verdade) */
