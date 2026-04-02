@@ -82,7 +82,7 @@ for aba in abas:
 
 # 🔧 ORGANIZAÇÃO
 def nome_linha(linha):
-    return linha.replace("BASE_", "").replace("_", " ")
+    return linha.replace("BASE_", "").replace("_", " ").strip()
 
 estrutura = {}
 
@@ -101,7 +101,7 @@ turnos = sorted(set(i["Turno"] for i in dados_total if i["Turno"]))
 
 linha_sel = col1.selectbox("🏭 Linha", ["Todas"] + linhas)
 
-# 📅 LISTA DE DATAS DISPONÍVEIS
+# 📅 LISTA DE DATAS
 datas_disponiveis = sorted(set(i.get("Data") for i in dados_total if i.get("Data")))
 
 datas_sel = col2.multiselect(
@@ -183,7 +183,7 @@ body {
 # 🔄 CONSTRUIR HTML
 for linha, datas in estrutura.items():
 
-    if linha_sel != "Todas" and linha != linha_sel:
+    if linha_sel != "Todas" and linha.strip() != linha_sel.strip():
         continue
 
     html += f"<div class='linha'><h2>{linha}</h2>"
