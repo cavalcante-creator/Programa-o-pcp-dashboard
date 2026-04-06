@@ -12,7 +12,7 @@ st.set_page_config(layout="wide")
 # 🎨 HEADER
 st.markdown("""
 <style>
-.block-container { padding-top: 0.2rem; }
+.block-container { padding-top: 1.5rem; }
 
 .header {
     display: flex;
