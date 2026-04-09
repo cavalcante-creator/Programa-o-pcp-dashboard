@@ -5,10 +5,11 @@ import csv
 from io import StringIO
 from datetime import datetime, date
 
+# 🔄 Auto refresh
 st_autorefresh(interval=60000)
 st.set_page_config(layout="wide")
 
-# 🎨 HEADER (mantido)
+# 🎨 HEADER
 st.markdown("""
 <style>
 .block-container { padding-top: 1.5rem; }
@@ -19,7 +20,10 @@ st.markdown("""
     justify-content: space-between;
 }
 
-.logo { width: 200px; margin-top: 10px; }
+.logo { 
+    width: 200px;
+    margin-top: 10px;
+}
 
 .titulo {
     flex-grow: 1;
@@ -28,25 +32,6 @@ st.markdown("""
     font-weight: 600;
 }
 .vazio { width: 140px; }
-
-.card {
-    width: 260px;
-    padding: 12px;
-    margin: 8px;
-    border-radius: 12px;
-    background: white;
-    box-shadow: 0px 4px 12px rgba(0,0,0,0.08);
-    border-left: 5px solid transparent;
-}
-
-.finalizado { border-left: 5px solid #2ecc71; }
-.producao { border-left: 5px solid #3498db; }
-.pendente { border-left: 5px solid #e74c3c; }
-.reprogramado { border-left: 5px solid #9b59b6; }
-
-.cards { display: flex; flex-wrap: wrap; }
-
-.linha h2 { background: #2c3e50; color: white; padding: 10px; border-radius: 8px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -79,7 +64,18 @@ for aba in abas:
         linha["Linha"] = aba
         dados_total.append(linha)
 
-# 🔢 conversão
+# 🔧 FUNÇÕES
+def nome_linha(linha):
+    return linha.replace("BASE_", "").replace("_", " ")
+
+def get_semana(data_str):
+    try:
+        dt = datetime.strptime(data_str, "%d/%m/%Y")
+        ano, semana, _ = dt.isocalendar()
+        return f"Semana {semana}/{ano}"
+    except:
+        return ""
+
 def to_float(valor):
     try:
         valor = str(valor).replace(".", "").replace(",", ".")
@@ -87,40 +83,27 @@ def to_float(valor):
     except:
         return 0
 
-def nome_linha(linha):
-    return linha.replace("BASE_", "").replace("_", " ")
-
-# 🔁 DUPLICAÇÃO POR NOVA DATA
-dados_expandido = []
+# 🔧 ORGANIZAÇÃO (COM NOVA DATA DUPLICADA)
+estrutura = {}
 
 for item in dados_total:
+    linha = nome_linha(item["Linha"])
+    data_original = item.get("Data", "")
     nova_data = str(item.get("Nova Data", "")).strip()
+    turno = item.get("Turno", "Sem Turno")
 
     # original
-    dados_expandido.append(item.copy())
+    estrutura.setdefault(linha, {}).setdefault(data_original, {}).setdefault(turno, []).append(item)
 
     # nova data
     if nova_data:
-        novo_item = item.copy()
-        novo_item["Data"] = nova_data
-        novo_item["Reprogramado"] = "Sim"
-        dados_expandido.append(novo_item)
-
-# 🔧 ORGANIZAÇÃO
-estrutura = {}
-
-for item in dados_expandido:
-    linha = nome_linha(item["Linha"])
-    data = item.get("Data", "")
-    turno = item.get("Turno", "Sem Turno")
-
-    estrutura.setdefault(linha, {}).setdefault(data, {}).setdefault(turno, []).append(item)
+        estrutura.setdefault(linha, {}).setdefault(nova_data, {}).setdefault(turno, []).append(item)
 
 # 🔽 FILTROS
 col1, col2, col3, col4, col5 = st.columns(5)
 
-linhas = sorted(set(nome_linha(i["Linha"]) for i in dados_expandido))
-turnos = sorted(set(i["Turno"] for i in dados_expandido if i["Turno"]))
+linhas = sorted(set(nome_linha(i["Linha"]) for i in dados_total))
+turnos = sorted(set(i["Turno"] for i in dados_total if i["Turno"]))
 
 linha_sel = col1.selectbox("🏭 Linha", ["Todas"] + linhas)
 
@@ -130,25 +113,84 @@ if "data_escolhida" not in st.session_state:
 data_input = col2.date_input("📅 Data", st.session_state.data_escolhida, format="DD/MM/YYYY")
 turno_sel = col3.selectbox("⏱ Turno", ["Todos"] + turnos)
 
+semanas_disponiveis = sorted(set(get_semana(i.get("Data")) for i in dados_total if i.get("Data")))
+semanas_sel = col4.multiselect("📆 Semanas", semanas_disponiveis)
+
+# 🔎 busca por ordem
 ordem_pesquisa = col5.text_input("🔎 Buscar Ordem")
 
-mostrar_todas = col4.checkbox("Mostrar todas as datas", value=True)
+colb1, colb2, colb3 = st.columns(3)
+
+if colb1.button("Hoje"):
+    st.session_state.data_escolhida = date.today()
+    data_input = date.today()
+
+mostrar_todas = colb2.checkbox("Mostrar todas as datas", value=True)
 data_sel = data_input.strftime("%d/%m/%Y")
 
-# 🔥 HTML
+# 🔥 HTML ORIGINAL (SEM ALTERAÇÃO)
 html = """
 <html>
 <head>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
 <style>
 body { font-family: 'Segoe UI'; background: #f5f7fa; margin: 20px; }
+.linha h2 { background: #2c3e50; color: white; padding: 10px; border-radius: 8px; }
+.cards { display: flex; flex-wrap: wrap; }
+.card {
+    width: 260px;
+    padding: 12px;
+    margin: 8px;
+    border-radius: 12px;
+    background: white;
+    box-shadow: 0px 4px 12px rgba(0,0,0,0.08);
+    border-left: 5px solid transparent;
+}
+.ok { border-left: 5px solid #95a5a6; }
+.producao { border-left: 5px solid #3498db; }
+.pendente { border-left: 5px solid #e74c3c; }
+.finalizado { border-left: 5px solid #2ecc71; }
+.reprogramado { border-left: 5px solid #9b59b6; }
+
+.btn-export {
+    margin-bottom: 15px;
+    padding: 8px 14px;
+    background: #2c3e50;
+    color: white;
+    border: none;
+    border-radius: 6px;
+}
 </style>
+
+<script>
+async function exportarTudo() {
+    const { jsPDF } = window.jspdf;
+    let elemento = document.getElementById("conteudo_total");
+
+    const canvas = await html2canvas(elemento, { scale: 2 });
+    const imgData = canvas.toDataURL("image/png");
+
+    const pdf = new jsPDF('p','mm','a4');
+    const largura = 190;
+    const altura = (canvas.height * largura) / canvas.width;
+
+    pdf.addImage(imgData, 'PNG', 10, 10, largura, altura);
+    pdf.save("programacao.pdf");
+}
+</script>
+
 </head>
 <body>
+
+<button class="btn-export" onclick="exportarTudo()">📄 Exportar Tudo</button>
 
 <div id="conteudo_total">
 """
 
-# 🔄 LOOP
+# 🔄 LOOP ORIGINAL + COR + BUSCA
 for linha, datas in estrutura.items():
 
     if linha_sel != "Todas" and linha != linha_sel:
@@ -159,16 +201,20 @@ for linha, datas in estrutura.items():
 
     for data, turnos in datas.items():
 
+        if semanas_sel and get_semana(data) not in semanas_sel:
+            continue
+
         if not mostrar_todas and data != data_sel:
             continue
 
         bloco += f"<h3>📅 {data}</h3>"
-        bloco += "<div class='cards'>"
 
         for turno, itens in turnos.items():
 
             if turno_sel != "Todos":
                 continue
+
+            bloco += "<div class='cards'>"
 
             for item in itens:
 
@@ -186,7 +232,7 @@ for linha, datas in estrutura.items():
                 total = to_float(qtde_total)
                 pendente = to_float(qtde_pendente)
 
-                # 🎨 cor
+                # 🎨 COR
                 if nova_data:
                     classe = "reprogramado"
                 elif pendente == 0:
@@ -204,7 +250,8 @@ for linha, datas in estrutura.items():
                 Qtde: {qtde_total}<br>
                 Status: {item.get("Status","-")}<br>
                 Pendente: {qtde_pendente}<br>
-                {"🔁 Nova Data: " + nova_data + "<br>" if nova_data else ""}
+                {"Ensacado: " + item.get("Ensacado","") + "<br>" if item.get("Ensacado") else ""}
+                {"🔁 Nova Data: " + nova_data if nova_data else ""}
                 </div>
                 """
 
