@@ -103,7 +103,6 @@ turno_sel = col3.selectbox("⏱ Turno", ["Todos"] + turnos)
 semanas_disponiveis = sorted(set(get_semana(i.get("Data")) for i in dados_total if i.get("Data")))
 semanas_sel = col4.multiselect("📆 Semanas", semanas_disponiveis)
 
-# 🔍 NOVO FILTRO
 ordem_pesquisa = col5.text_input("🔎 Buscar Ordem")
 
 colb1, colb2, colb3 = st.columns(3)
@@ -138,12 +137,12 @@ body { font-family: 'Segoe UI'; background: #f5f7fa; margin: 20px; }
     border-left: 5px solid transparent;
 }
 
-/* 🎨 CORES POR STATUS */
-.ok { border-left: 5px solid #95a5a6; }
+/* 🎨 CORES */
+.finalizado { border-left: 5px solid #2ecc71; }
 .producao { border-left: 5px solid #3498db; }
 .pendente { border-left: 5px solid #e74c3c; }
-.finalizado { border-left: 5px solid #2ecc71; }
-.parado { border-left: 5px solid #f1c40f; }
+.reprogramado { border-left: 5px solid #9b59b6; }
+.ok { border-left: 5px solid #95a5a6; }
 
 .btn-export {
     margin-bottom: 15px;
@@ -210,36 +209,47 @@ for linha, datas in estrutura.items():
 
                 ordem = item.get("Ordem", "")
 
-                # 🔍 filtro por ordem
                 if ordem_pesquisa and ordem_pesquisa not in ordem:
                     continue
 
                 tem = True
 
-                status = item.get("Status", "").lower()
+                # 📊 valores
+                qtde_total = item.get("Qtde Total", "0")
+                qtde_pendente = item.get("Qtde Pendente", "0")
+                nova_data = item.get("Nova Data", "").strip()
                 ensacado = item.get("Ensacado", "")
 
-                # 🎨 cor por status
-                if "final" in status:
+                try:
+                    total = float(qtde_total)
+                except:
+                    total = 0
+
+                try:
+                    pendente = float(qtde_pendente)
+                except:
+                    pendente = 0
+
+                # 🎨 lógica de cor
+                if nova_data:
+                    classe = "reprogramado"
+                elif pendente == 0:
                     classe = "finalizado"
-                elif "produ" in status:
+                elif pendente < total:
                     classe = "producao"
-                elif "pend" in status:
-                    classe = "pendente"
-                elif "para" in status:
-                    classe = "parado"
                 else:
-                    classe = "ok"
+                    classe = "pendente"
 
                 bloco += f"""
                 <div class='card {classe}'>
                 <b>{item.get("Produto")}</b><br>
                 Ordem: {ordem}<br>
                 Turno: {item.get("Turno","-")}<br>
-                Qtde: {item.get("Qtde Total")}<br>
+                Qtde: {qtde_total}<br>
                 Status: {item.get("Status","-")}<br>
-                Pendente: {item.get("Qtde Pendente","0")}<br>
-                {"Ensacado: " + ensacado if ensacado else ""}
+                Pendente: {qtde_pendente}<br>
+                {"Ensacado: " + ensacado + "<br>" if ensacado else ""}
+                {"🔁 Nova Data: " + nova_data if nova_data else ""}
                 </div>
                 """
 
