@@ -87,7 +87,7 @@ for item in dados_total:
     estrutura.setdefault(linha, {}).setdefault(data, {}).setdefault(turno, []).append(item)
 
 # 🔽 FILTROS
-col1, col2, col3, col4 = st.columns(4)
+col1, col2, col3, col4, col5 = st.columns(5)
 
 linhas = sorted(set(nome_linha(i["Linha"]) for i in dados_total))
 turnos = sorted(set(i["Turno"] for i in dados_total if i["Turno"]))
@@ -102,6 +102,9 @@ turno_sel = col3.selectbox("⏱ Turno", ["Todos"] + turnos)
 
 semanas_disponiveis = sorted(set(get_semana(i.get("Data")) for i in dados_total if i.get("Data")))
 semanas_sel = col4.multiselect("📆 Semanas", semanas_disponiveis)
+
+# 🔍 NOVO FILTRO
+ordem_pesquisa = col5.text_input("🔎 Buscar Ordem")
 
 colb1, colb2, colb3 = st.columns(3)
 
@@ -124,6 +127,7 @@ html = """
 body { font-family: 'Segoe UI'; background: #f5f7fa; margin: 20px; }
 .linha h2 { background: #2c3e50; color: white; padding: 10px; border-radius: 8px; }
 .cards { display: flex; flex-wrap: wrap; }
+
 .card {
     width: 260px;
     padding: 12px;
@@ -133,7 +137,13 @@ body { font-family: 'Segoe UI'; background: #f5f7fa; margin: 20px; }
     box-shadow: 0px 4px 12px rgba(0,0,0,0.08);
     border-left: 5px solid transparent;
 }
-.ok { border-left: 5px solid #2ecc71; }
+
+/* 🎨 CORES POR STATUS */
+.ok { border-left: 5px solid #95a5a6; }
+.producao { border-left: 5px solid #3498db; }
+.pendente { border-left: 5px solid #e74c3c; }
+.finalizado { border-left: 5px solid #2ecc71; }
+.parado { border-left: 5px solid #f1c40f; }
 
 .btn-export {
     margin-bottom: 15px;
@@ -197,14 +207,34 @@ for linha, datas in estrutura.items():
             bloco += "<div class='cards'>"
 
             for item in itens:
+
+                ordem = item.get("Ordem", "")
+
+                # 🔍 filtro por ordem
+                if ordem_pesquisa and ordem_pesquisa not in ordem:
+                    continue
+
                 tem = True
 
+                status = item.get("Status", "").lower()
                 ensacado = item.get("Ensacado", "")
 
+                # 🎨 cor por status
+                if "final" in status:
+                    classe = "finalizado"
+                elif "produ" in status:
+                    classe = "producao"
+                elif "pend" in status:
+                    classe = "pendente"
+                elif "para" in status:
+                    classe = "parado"
+                else:
+                    classe = "ok"
+
                 bloco += f"""
-                <div class='card ok'>
+                <div class='card {classe}'>
                 <b>{item.get("Produto")}</b><br>
-                Ordem: {item.get("Ordem")}<br>
+                Ordem: {ordem}<br>
                 Turno: {item.get("Turno","-")}<br>
                 Qtde: {item.get("Qtde Total")}<br>
                 Status: {item.get("Status","-")}<br>
