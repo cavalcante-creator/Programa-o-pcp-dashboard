@@ -76,6 +76,14 @@ def get_semana(data_str):
     except:
         return ""
 
+# 🔢 conversão segura
+def to_float(valor):
+    try:
+        valor = str(valor).replace(".", "").replace(",", ".")
+        return float(valor)
+    except:
+        return 0
+
 # 🔧 ORGANIZAÇÃO
 estrutura = {}
 
@@ -214,24 +222,16 @@ for linha, datas in estrutura.items():
 
                 tem = True
 
-                # 📊 valores
                 qtde_total = item.get("Qtde Total", "0")
                 qtde_pendente = item.get("Qtde Pendente", "0")
-                nova_data = item.get("Nova Data", "").strip()
+                nova_data = str(item.get("Nova Data", "")).strip()
                 ensacado = item.get("Ensacado", "")
 
-                try:
-                    total = float(qtde_total)
-                except:
-                    total = 0
-
-                try:
-                    pendente = float(qtde_pendente)
-                except:
-                    pendente = 0
+                total = to_float(qtde_total)
+                pendente = to_float(qtde_pendente)
 
                 # 🎨 lógica de cor
-                if nova_data:
+                if nova_data != "":
                     classe = "reprogramado"
                 elif pendente == 0:
                     classe = "finalizado"
