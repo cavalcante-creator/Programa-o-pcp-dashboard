@@ -198,6 +198,9 @@ for linha, datas in estrutura.items():
 
             for item in itens:
                 tem = True
+
+                ensacado = item.get("Ensacado", "")
+
                 bloco += f"""
                 <div class='card ok'>
                 <b>{item.get("Produto")}</b><br>
@@ -205,7 +208,8 @@ for linha, datas in estrutura.items():
                 Turno: {item.get("Turno","-")}<br>
                 Qtde: {item.get("Qtde Total")}<br>
                 Status: {item.get("Status","-")}<br>
-                Pendente: {item.get("Qtde Pendente","0")}
+                Pendente: {item.get("Qtde Pendente","0")}<br>
+                {"Ensacado: " + ensacado if ensacado else ""}
                 </div>
                 """
 
