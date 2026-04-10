@@ -138,12 +138,34 @@ html = """
 
 <style>
 body { font-family: 'Segoe UI'; background: #f5f7fa; margin: 20px; }
-.linha h2 { background: #2c3e50; color: white; padding: 10px; border-radius: 8px; }
-.cards { display: flex; flex-wrap: wrap; }
+.linha {
+    margin-bottom: 10px;
+}
+
+.linha h2 { 
+    background: #2c3e50; 
+    color: white; 
+    padding: 8px; 
+    border-radius: 6px;
+    margin-bottom: 5px;
+}
+
+h3 {
+    margin: 5px 0 5px 5px;
+    font-size: 16px;
+    color: #34495e;
+}
+
+.cards { 
+    display: flex; 
+    flex-wrap: wrap; 
+    gap: 6px;
+    margin-bottom: 8px;
+}
 .card {
-    width: 260px;
-    padding: 12px;
-    margin: 8px;
+    width: 250px;
+    padding: 10px;
+    margin: 4px;
     border-radius: 12px;
     background: white;
     box-shadow: 0px 4px 12px rgba(0,0,0,0.08);
