@@ -156,10 +156,10 @@ body { font-family: 'Segoe UI'; background: #f5f7fa; margin: 20px; }
 }
 
 /* 🎨 CORES MAIS SUAVES */
-.producao { border-left: 5px solid #5dade2; }
-.pendente { border-left: 5px solid #ec7063; }
-.finalizado { border-left: 5px solid #58d68d; }
-.reprogramado { border-left: 5px solid #af7ac5; }
+.producao { border-left: 5px solid #a9cce3; background: #f4f9fd; }
+.pendente { border-left: 5px solid #f5b7b1; background: #fdf2f2; }
+.finalizado { border-left: 5px solid #a9dfbf; background: #f3fbf6; }
+.reprogramado { border-left: 5px solid #d7bde2; background: #f8f4fb; }
 
 .btn-export {
     margin-bottom: 15px;
