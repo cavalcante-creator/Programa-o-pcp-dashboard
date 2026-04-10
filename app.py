@@ -83,7 +83,7 @@ def to_float(valor):
     except:
         return 0
 
-# 🔧 ORGANIZAÇÃO (COM NOVA DATA DUPLICADA)
+# 🔧 ORGANIZAÇÃO
 estrutura = {}
 
 for item in dados_total:
@@ -92,15 +92,13 @@ for item in dados_total:
     nova_data = str(item.get("Nova Data", "")).strip()
     turno = item.get("Turno", "Sem Turno")
 
-    # original
     estrutura.setdefault(linha, {}).setdefault(data_original, {}).setdefault(turno, []).append(item)
 
-    # nova data
     if nova_data:
         estrutura.setdefault(linha, {}).setdefault(nova_data, {}).setdefault(turno, []).append(item)
 
 # 🔽 FILTROS
-col1, col2, col3, col4, col5 = st.columns(5)
+col1, col2, col3, col4, col5, col6 = st.columns(6)
 
 linhas = sorted(set(nome_linha(i["Linha"]) for i in dados_total))
 turnos = sorted(set(i["Turno"] for i in dados_total if i["Turno"]))
@@ -116,8 +114,10 @@ turno_sel = col3.selectbox("⏱ Turno", ["Todos"] + turnos)
 semanas_disponiveis = sorted(set(get_semana(i.get("Data")) for i in dados_total if i.get("Data")))
 semanas_sel = col4.multiselect("📆 Semanas", semanas_disponiveis)
 
-# 🔎 busca por ordem
 ordem_pesquisa = col5.text_input("🔎 Buscar Ordem")
+
+# ✅ NOVO FILTRO
+produto_pesquisa = col6.text_input("🔎 Buscar Produto")
 
 colb1, colb2, colb3 = st.columns(3)
 
@@ -128,7 +128,7 @@ if colb1.button("Hoje"):
 mostrar_todas = colb2.checkbox("Mostrar todas as datas", value=True)
 data_sel = data_input.strftime("%d/%m/%Y")
 
-# 🔥 HTML ORIGINAL (SEM ALTERAÇÃO)
+# 🔥 HTML
 html = """
 <html>
 <head>
@@ -149,7 +149,6 @@ body { font-family: 'Segoe UI'; background: #f5f7fa; margin: 20px; }
     box-shadow: 0px 4px 12px rgba(0,0,0,0.08);
     border-left: 5px solid transparent;
 }
-.ok { border-left: 5px solid #95a5a6; }
 .producao { border-left: 5px solid #3498db; }
 .pendente { border-left: 5px solid #e74c3c; }
 .finalizado { border-left: 5px solid #2ecc71; }
@@ -190,7 +189,7 @@ async function exportarTudo() {
 <div id="conteudo_total">
 """
 
-# 🔄 LOOP ORIGINAL + COR + BUSCA
+# 🔄 LOOP
 for linha, datas in estrutura.items():
 
     if linha_sel != "Todas" and linha != linha_sel:
@@ -219,8 +218,13 @@ for linha, datas in estrutura.items():
             for item in itens:
 
                 ordem = item.get("Ordem", "")
+                produto = item.get("Produto", "")
 
                 if ordem_pesquisa and ordem_pesquisa not in ordem:
+                    continue
+
+                # ✅ FILTRO PRODUTO
+                if produto_pesquisa and produto_pesquisa.lower() not in produto.lower():
                     continue
 
                 tem = True
@@ -232,7 +236,6 @@ for linha, datas in estrutura.items():
                 total = to_float(qtde_total)
                 pendente = to_float(qtde_pendente)
 
-                # 🎨 COR
                 if nova_data:
                     classe = "reprogramado"
                 elif pendente == 0:
@@ -244,7 +247,7 @@ for linha, datas in estrutura.items():
 
                 bloco += f"""
                 <div class='card {classe}'>
-                <b>{item.get("Produto")}</b><br>
+                <b>{produto}</b><br>
                 Ordem: {ordem}<br>
                 Turno: {item.get("Turno","-")}<br>
                 Qtde: {qtde_total}<br>
