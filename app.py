@@ -92,10 +92,9 @@ for item in dados_total:
     nova_data = str(item.get("Nova Data", "")).strip()
     turno = item.get("Turno", "Sem Turno")
 
-    estrutura.setdefault(linha, {}).setdefault(data_original, {}).setdefault(turno, []).append(item)
+    data_usar = nova_data if nova_data else data_original
 
-    if nova_data:
-        estrutura.setdefault(linha, {}).setdefault(nova_data, {}).setdefault(turno, []).append(item)
+estrutura.setdefault(linha, {}).setdefault(data_usar, {}).setdefault(turno, []).append(item)
 
 # 🔽 FILTROS
 col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
