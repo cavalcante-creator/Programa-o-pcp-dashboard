@@ -117,7 +117,6 @@ semanas_sel = col4.multiselect("📆 Semanas", semanas_disponiveis)
 ordem_pesquisa = col5.text_input("🔎 Buscar Ordem")
 produto_pesquisa = col6.text_input("🔎 Buscar Produto")
 
-# ✅ NOVO FILTRO STATUS
 status_lista = sorted(set(i.get("Status","") for i in dados_total if i.get("Status")))
 status_sel = col7.selectbox("📌 Status", ["Todos"] + status_lista)
 
@@ -155,11 +154,12 @@ body { font-family: 'Segoe UI'; background: #f5f7fa; margin: 20px; }
     border-left: 5px solid transparent;
 }
 
-/* 🎨 CORES MAIS SUAVES */
+/* 🎨 CORES PASTEL */
 .producao { border-left: 5px solid #a9cce3; background: #f4f9fd; }
 .pendente { border-left: 5px solid #f5b7b1; background: #fdf2f2; }
 .finalizado { border-left: 5px solid #a9dfbf; background: #f3fbf6; }
 .reprogramado { border-left: 5px solid #d7bde2; background: #f8f4fb; }
+.liberada { border-left: 5px solid #f9e79f; background: #fef9e7; }
 
 .btn-export {
     margin-bottom: 15px;
@@ -226,7 +226,7 @@ for linha, datas in estrutura.items():
 
                 ordem = item.get("Ordem", "")
                 produto = item.get("Produto", "")
-                status = item.get("Status", "")
+                status = item.get("Status", "").lower()
 
                 if ordem_pesquisa and ordem_pesquisa not in ordem:
                     continue
@@ -234,7 +234,7 @@ for linha, datas in estrutura.items():
                 if produto_pesquisa and produto_pesquisa.lower() not in produto.lower():
                     continue
 
-                if status_sel != "Todos" and status != status_sel:
+                if status_sel != "Todos" and item.get("Status","") != status_sel:
                     continue
 
                 tem = True
@@ -246,7 +246,10 @@ for linha, datas in estrutura.items():
                 total = to_float(qtde_total)
                 pendente = to_float(qtde_pendente)
 
-                if nova_data:
+                # 🎨 REGRA DE COR
+                if "liberada" in status:
+                    classe = "liberada"
+                elif nova_data:
                     classe = "reprogramado"
                 elif pendente == 0:
                     classe = "finalizado"
@@ -261,7 +264,7 @@ for linha, datas in estrutura.items():
                 Ordem: {ordem}<br>
                 Turno: {item.get("Turno","-")}<br>
                 Qtde: {qtde_total}<br>
-                Status: {status}<br>
+                Status: {item.get("Status","-")}<br>
                 Pendente: {qtde_pendente}<br>
                 {"Ensacado: " + item.get("Ensacado","") + "<br>" if item.get("Ensacado") else ""}
                 {"🔁 Nova Data: " + nova_data if nova_data else ""}
