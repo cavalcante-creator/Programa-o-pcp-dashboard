@@ -83,6 +83,21 @@ def to_float(valor):
     except:
         return 0
 
+# ✅ LIMPEZA DE STATUS
+def limpar_status(s):
+    if not s:
+        return ""
+    s = str(s).strip().upper()
+
+    if "AGUARDANDO" in s:
+        return "AGUARDANDO"
+    if "PRODUÇÃO" in s:
+        return "EM PRODUÇÃO"
+    if "LIBERADA" in s:
+        return "LIBERADA"
+
+    return s
+
 # 🔧 ORGANIZAÇÃO (SEM DUPLICAÇÃO)
 estrutura = {}
 
@@ -92,7 +107,6 @@ for item in dados_total:
     nova_data = str(item.get("Nova Data", "")).strip()
     turno = item.get("Turno", "Sem Turno")
 
-    # ✅ USA APENAS UMA DATA
     data_usar = nova_data if nova_data else data_original
 
     estrutura.setdefault(linha, {}).setdefault(data_usar, {}).setdefault(turno, []).append(item)
@@ -117,7 +131,8 @@ semanas_sel = col4.multiselect("📆 Semanas", semanas_disponiveis)
 ordem_pesquisa = col5.text_input("🔎 Buscar Ordem")
 produto_pesquisa = col6.text_input("🔎 Buscar Produto")
 
-status_lista = sorted(set(i.get("Status","") for i in dados_total if i.get("Status")))
+# ✅ STATUS LIMPO NO FILTRO
+status_lista = sorted(set(limpar_status(i.get("Status")) for i in dados_total if i.get("Status")))
 status_sel = col7.selectbox("📌 Status", ["Todos"] + status_lista)
 
 colb1, colb2, colb3 = st.columns(3)
@@ -226,7 +241,8 @@ for linha, datas in estrutura.items():
 
                 ordem = item.get("Ordem", "")
                 produto = item.get("Produto", "")
-                status = item.get("Status", "").lower()
+                status_original = item.get("Status", "")
+                status = limpar_status(status_original)
 
                 if ordem_pesquisa and ordem_pesquisa not in ordem:
                     continue
@@ -234,7 +250,7 @@ for linha, datas in estrutura.items():
                 if produto_pesquisa and produto_pesquisa.lower() not in produto.lower():
                     continue
 
-                if status_sel != "Todos" and item.get("Status","") != status_sel:
+                if status_sel != "Todos" and status != status_sel:
                     continue
 
                 tem = True
@@ -247,7 +263,9 @@ for linha, datas in estrutura.items():
                 pendente = to_float(qtde_pendente)
 
                 # 🎨 REGRA DE COR
-                if "liberada" in status:
+                status_lower = status.lower()
+
+                if "liberada" in status_lower:
                     classe = "liberada"
                 elif nova_data:
                     classe = "reprogramado"
@@ -264,7 +282,7 @@ for linha, datas in estrutura.items():
                 Ordem: {ordem}<br>
                 Turno: {item.get("Turno","-")}<br>
                 Qtde: {qtde_total}<br>
-                Status: {item.get("Status","-")}<br>
+                Status: {status_original}<br>
                 Pendente: {qtde_pendente}<br>
                 {"Ensacado: " + item.get("Ensacado","") + "<br>" if item.get("Ensacado") else ""}
                 {"🔁 Nova Data: " + nova_data if nova_data else ""}
