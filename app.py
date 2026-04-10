@@ -83,7 +83,6 @@ def to_float(valor):
     except:
         return 0
 
-# ✅ LIMPEZA DE STATUS
 def limpar_status(s):
     if not s:
         return ""
@@ -131,7 +130,6 @@ semanas_sel = col4.multiselect("📆 Semanas", semanas_disponiveis)
 ordem_pesquisa = col5.text_input("🔎 Buscar Ordem")
 produto_pesquisa = col6.text_input("🔎 Buscar Produto")
 
-# ✅ STATUS LIMPO NO FILTRO
 status_lista = sorted(set(limpar_status(i.get("Status")) for i in dados_total if i.get("Status")))
 status_sel = col7.selectbox("📌 Status", ["Todos"] + status_lista)
 
@@ -218,7 +216,7 @@ for linha, datas in estrutura.items():
         continue
 
     bloco = f"<div class='linha'><h2>{linha}</h2>"
-    tem = False
+    tem_linha = False
 
     for data, turnos in datas.items():
 
@@ -228,14 +226,12 @@ for linha, datas in estrutura.items():
         if not mostrar_todas and data != data_sel:
             continue
 
-        bloco += f"<h3>📅 {data}</h3>"
+        itens_filtrados = []
 
         for turno, itens in turnos.items():
 
             if turno_sel != "Todos":
                 continue
-
-            bloco += "<div class='cards'>"
 
             for item in itens:
 
@@ -253,47 +249,60 @@ for linha, datas in estrutura.items():
                 if status_sel != "Todos" and status != status_sel:
                     continue
 
-                tem = True
+                itens_filtrados.append(item)
 
-                qtde_total = item.get("Qtde Total", "0")
-                qtde_pendente = item.get("Qtde Pendente", "0")
-                nova_data = str(item.get("Nova Data", "")).strip()
+        if not itens_filtrados:
+            continue
 
-                total = to_float(qtde_total)
-                pendente = to_float(qtde_pendente)
+        tem_linha = True
+        bloco += f"<h3>📅 {data}</h3>"
+        bloco += "<div class='cards'>"
 
-                # 🎨 REGRA DE COR
-                status_lower = status.lower()
+        for item in itens_filtrados:
 
-                if "liberada" in status_lower:
-                    classe = "liberada"
-                elif nova_data:
-                    classe = "reprogramado"
-                elif pendente == 0:
-                    classe = "finalizado"
-                elif pendente < total:
-                    classe = "producao"
-                else:
-                    classe = "pendente"
+            produto = item.get("Produto", "")
+            ordem = item.get("Ordem", "")
+            status_original = item.get("Status", "")
+            status = limpar_status(status_original)
 
-                bloco += f"""
-                <div class='card {classe}'>
-                <b>{produto}</b><br>
-                Ordem: {ordem}<br>
-                Turno: {item.get("Turno","-")}<br>
-                Qtde: {qtde_total}<br>
-                Status: {status_original}<br>
-                Pendente: {qtde_pendente}<br>
-                {"Ensacado: " + item.get("Ensacado","") + "<br>" if item.get("Ensacado") else ""}
-                {"🔁 Nova Data: " + nova_data if nova_data else ""}
-                </div>
-                """
+            qtde_total = item.get("Qtde Total", "0")
+            qtde_pendente = item.get("Qtde Pendente", "0")
+            nova_data = str(item.get("Nova Data", "")).strip()
 
-            bloco += "</div>"
+            total = to_float(qtde_total)
+            pendente = to_float(qtde_pendente)
+
+            status_lower = status.lower()
+
+            if "liberada" in status_lower:
+                classe = "liberada"
+            elif nova_data:
+                classe = "reprogramado"
+            elif pendente == 0:
+                classe = "finalizado"
+            elif pendente < total:
+                classe = "producao"
+            else:
+                classe = "pendente"
+
+            bloco += f"""
+            <div class='card {classe}'>
+            <b>{produto}</b><br>
+            Ordem: {ordem}<br>
+            Turno: {item.get("Turno","-")}<br>
+            Qtde: {qtde_total}<br>
+            Status: {status_original}<br>
+            Pendente: {qtde_pendente}<br>
+            {"Ensacado: " + item.get("Ensacado","") + "<br>" if item.get("Ensacado") else ""}
+            {"🔁 Nova Data: " + nova_data if nova_data else ""}
+            </div>
+            """
+
+        bloco += "</div>"
 
     bloco += "</div>"
 
-    if tem:
+    if tem_linha:
         html += bloco
 
 html += "</div></body></html>"
