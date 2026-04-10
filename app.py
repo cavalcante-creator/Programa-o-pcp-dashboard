@@ -98,7 +98,7 @@ for item in dados_total:
         estrutura.setdefault(linha, {}).setdefault(nova_data, {}).setdefault(turno, []).append(item)
 
 # 🔽 FILTROS
-col1, col2, col3, col4, col5, col6 = st.columns(6)
+col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
 
 linhas = sorted(set(nome_linha(i["Linha"]) for i in dados_total))
 turnos = sorted(set(i["Turno"] for i in dados_total if i["Turno"]))
@@ -115,9 +115,11 @@ semanas_disponiveis = sorted(set(get_semana(i.get("Data")) for i in dados_total 
 semanas_sel = col4.multiselect("📆 Semanas", semanas_disponiveis)
 
 ordem_pesquisa = col5.text_input("🔎 Buscar Ordem")
-
-# ✅ NOVO FILTRO
 produto_pesquisa = col6.text_input("🔎 Buscar Produto")
+
+# ✅ NOVO FILTRO STATUS
+status_lista = sorted(set(i.get("Status","") for i in dados_total if i.get("Status")))
+status_sel = col7.selectbox("📌 Status", ["Todos"] + status_lista)
 
 colb1, colb2, colb3 = st.columns(3)
 
@@ -138,43 +140,26 @@ html = """
 
 <style>
 body { font-family: 'Segoe UI'; background: #f5f7fa; margin: 20px; }
-.linha {
-    margin-bottom: 10px;
-}
 
-.linha h2 { 
-    background: #2c3e50; 
-    color: white; 
-    padding: 8px; 
-    border-radius: 6px;
-    margin-bottom: 5px;
-}
+.linha h2 { background: #2c3e50; color: white; padding: 10px; border-radius: 8px; }
 
-h3 {
-    margin: 5px 0 5px 5px;
-    font-size: 16px;
-    color: #34495e;
-}
+.cards { display: flex; flex-wrap: wrap; }
 
-.cards { 
-    display: flex; 
-    flex-wrap: wrap; 
-    gap: 6px;
-    margin-bottom: 8px;
-}
 .card {
-    width: 250px;
-    padding: 10px;
-    margin: 4px;
+    width: 260px;
+    padding: 12px;
+    margin: 8px;
     border-radius: 12px;
     background: white;
-    box-shadow: 0px 4px 12px rgba(0,0,0,0.08);
+    box-shadow: 0px 4px 12px rgba(0,0,0,0.06);
     border-left: 5px solid transparent;
 }
-.producao { border-left: 5px solid #3498db; }
-.pendente { border-left: 5px solid #e74c3c; }
-.finalizado { border-left: 5px solid #2ecc71; }
-.reprogramado { border-left: 5px solid #9b59b6; }
+
+/* 🎨 CORES MAIS SUAVES */
+.producao { border-left: 5px solid #5dade2; }
+.pendente { border-left: 5px solid #ec7063; }
+.finalizado { border-left: 5px solid #58d68d; }
+.reprogramado { border-left: 5px solid #af7ac5; }
 
 .btn-export {
     margin-bottom: 15px;
@@ -241,12 +226,15 @@ for linha, datas in estrutura.items():
 
                 ordem = item.get("Ordem", "")
                 produto = item.get("Produto", "")
+                status = item.get("Status", "")
 
                 if ordem_pesquisa and ordem_pesquisa not in ordem:
                     continue
 
-                # ✅ FILTRO PRODUTO
                 if produto_pesquisa and produto_pesquisa.lower() not in produto.lower():
+                    continue
+
+                if status_sel != "Todos" and status != status_sel:
                     continue
 
                 tem = True
@@ -273,7 +261,7 @@ for linha, datas in estrutura.items():
                 Ordem: {ordem}<br>
                 Turno: {item.get("Turno","-")}<br>
                 Qtde: {qtde_total}<br>
-                Status: {item.get("Status","-")}<br>
+                Status: {status}<br>
                 Pendente: {qtde_pendente}<br>
                 {"Ensacado: " + item.get("Ensacado","") + "<br>" if item.get("Ensacado") else ""}
                 {"🔁 Nova Data: " + nova_data if nova_data else ""}
