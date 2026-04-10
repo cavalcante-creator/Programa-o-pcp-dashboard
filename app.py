@@ -83,7 +83,7 @@ def to_float(valor):
     except:
         return 0
 
-# 🔧 ORGANIZAÇÃO
+# 🔧 ORGANIZAÇÃO (SEM DUPLICAÇÃO)
 estrutura = {}
 
 for item in dados_total:
@@ -92,9 +92,10 @@ for item in dados_total:
     nova_data = str(item.get("Nova Data", "")).strip()
     turno = item.get("Turno", "Sem Turno")
 
+    # ✅ USA APENAS UMA DATA
     data_usar = nova_data if nova_data else data_original
 
-estrutura.setdefault(linha, {}).setdefault(data_usar, {}).setdefault(turno, []).append(item)
+    estrutura.setdefault(linha, {}).setdefault(data_usar, {}).setdefault(turno, []).append(item)
 
 # 🔽 FILTROS
 col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
