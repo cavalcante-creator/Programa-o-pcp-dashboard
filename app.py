@@ -242,11 +242,11 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     y+=16;
 
     campo(10,y,120,12,"STATUS",status);
-campo(130,y,70,12,"OPERADOR","");
+    campo(130,y,70,12,"OPERADOR","");
 
-y+=16;
+    y+=16;
 
-campo(10,y,120,12,"RANCHO","");
+    campo(10,y,120,12,"RANCHO","");
 
     y+=20;
 
@@ -276,13 +276,22 @@ campo(10,y,120,12,"RANCHO","");
 
     pdf.save("ordem_producao.pdf");
 }
+
+// 🆕 FUNÇÃO RANCHO
+function anexarRancho(input, ordem){
+    const file = input.files[0];
+
+    if(file){
+        alert("PDF do rancho anexado para a ordem: " + ordem + "\\nArquivo: " + file.name);
+    }
+}
 </script>
 
 </head>
 <body>
 """
 
-# 🔄 LOOP (COM CORES RESTAURADAS)
+# 🔄 LOOP
 for linha, datas in estrutura.items():
 
     if linha_sel != "Todas" and linha != linha_sel:
@@ -366,6 +375,14 @@ for linha, datas in estrutura.items():
             )">
             📄 Gerar PDF
             </button>
+
+            <br><br>
+
+            <label style="font-size:12px;">📎 Rancho:</label><br>
+
+            <input type="file" accept="application/pdf"
+            onchange="anexarRancho(this, '{ordem}')"
+            style="font-size:11px;">
 
             </div>
             """
