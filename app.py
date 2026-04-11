@@ -241,7 +241,8 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
 
     y+=16;
 
-    campo(10,y,190,12,"STATUS",status);
+    campo(10,y,120,12,"STATUS",status);
+campo(130,y,70,12,"OPERADOR","");
 
     y+=20;
 
