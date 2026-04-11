@@ -1,3 +1,11 @@
+html = """
+<html>
+<head>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+
 <script>
 let arquivosRancho = {};
 
@@ -13,7 +21,6 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF('p','mm','a4');
 
-    // LOGO
     const img = new Image();
     img.src = "https://raw.githubusercontent.com/cavalcante-creator/Programa-o-pcp-dashboard/main/COL_LOGO_8.png";
 
@@ -21,11 +28,9 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
 
     pdf.addImage(img, 'PNG', 10, 8, 35, 12);
 
-    // TITULO
     pdf.setFontSize(14);
     pdf.text("ORDEM DE PRODUCAO", 70, 15);
 
-    // LINHA + DATA
     pdf.setDrawColor(200);
     pdf.setFillColor(240);
     pdf.rect(10, 25, 190, 8, 'F');
@@ -34,7 +39,6 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.text("Linha: " + linha, 12, 30);
     pdf.text("Data: " + data, 140, 30);
 
-    // INFORMACOES
     let y = 40;
 
     pdf.setFontSize(10);
@@ -42,15 +46,12 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.text("Ordem: " + ordem, 10, y+6);
     pdf.text("Turno: " + turno, 10, y+12);
 
-    // QUANTIDADES
     pdf.setFontSize(11);
     pdf.text("Quantidade Programada: " + qtde, 10, y+22);
     pdf.text("Quantidade Pendente: " + pendente, 10, y+30);
 
-    // OPERADOR
     pdf.text("Operador: ____________________________", 10, y+40);
 
-    // TABELA
     let startY = y + 50;
 
     const colunas = [
@@ -62,12 +63,10 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
 
     pdf.setFontSize(9);
 
-    // CABECALHO
     for(let i=0; i<colunas.length; i++){
         pdf.text(colunas[i], colX[i], startY);
     }
 
-    // LINHAS
     let linhaY = startY + 5;
 
     while(linhaY < 280){
@@ -81,7 +80,6 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
         linhaY += 6;
     }
 
-    // GERAR PDF
     const pdfBytes = pdf.output('arraybuffer');
 
     const mergedPdf = await PDFLib.PDFDocument.create();
@@ -90,7 +88,6 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     const pagesPrincipal = await mergedPdf.copyPages(pdfPrincipal, pdfPrincipal.getPageIndices());
     pagesPrincipal.forEach(p => mergedPdf.addPage(p));
 
-    // ANEXAR RANCHO
     if(arquivosRancho[ordem]){
         const bytes = await arquivosRancho[ordem].arrayBuffer();
         const pdfRancho = await PDFLib.PDFDocument.load(bytes);
@@ -107,47 +104,8 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     link.download = "ordem_producao.pdf";
     link.click();
 }
-
-async function exportarLinha(){
-    const mergedPdf = await PDFLib.PDFDocument.create();
-    const cards = document.querySelectorAll(".card");
-
-    for(let card of cards){
-
-        const ordemMatch = card.innerText.match(/Ordem:\s*(.*)/);
-        const produtoMatch = card.innerText.split("\n")[0];
-
-        if(!ordemMatch) continue;
-
-        const ordem = ordemMatch[1];
-
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF();
-
-        pdf.text("ORDEM: " + ordem, 10, 10);
-        pdf.text("PRODUTO: " + produtoMatch, 10, 20);
-
-        const pdfBytes = pdf.output('arraybuffer');
-
-        const pdfPrincipal = await PDFLib.PDFDocument.load(pdfBytes);
-        const pages = await mergedPdf.copyPages(pdfPrincipal, pdfPrincipal.getPageIndices());
-        pages.forEach(p => mergedPdf.addPage(p));
-
-        if(arquivosRancho[ordem]){
-            const bytes = await arquivosRancho[ordem].arrayBuffer();
-            const pdfRancho = await PDFLib.PDFDocument.load(bytes);
-            const pagesRancho = await mergedPdf.copyPages(pdfRancho, pdfRancho.getPageIndices());
-            pagesRancho.forEach(p => mergedPdf.addPage(p));
-        }
-    }
-
-    const finalPdf = await mergedPdf.save();
-
-    const blob = new Blob([finalPdf], { type: 'application/pdf' });
-    const link = document.createElement('a');
-
-    link.href = URL.createObjectURL(blob);
-    link.download = "linha_completa.pdf";
-    link.click();
-}
 </script>
+
+</head>
+<body>
+"""
