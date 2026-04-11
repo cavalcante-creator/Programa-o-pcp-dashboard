@@ -78,23 +78,16 @@ def get_semana(data_str):
 
 def to_float(valor):
     try:
-        valor = str(valor).replace(".", "").replace(",", ".")
-        return float(valor)
+        return float(str(valor).replace(".", "").replace(",", "."))
     except:
         return 0
 
 def limpar_status(s):
-    if not s:
-        return ""
+    if not s: return ""
     s = str(s).strip().upper()
-
-    if "AGUARDANDO" in s:
-        return "AGUARDANDO"
-    if "PRODUÇÃO" in s:
-        return "EM PRODUÇÃO"
-    if "LIBERADA" in s:
-        return "LIBERADA"
-
+    if "AGUARDANDO" in s: return "AGUARDANDO"
+    if "PRODUÇÃO" in s: return "EM PRODUÇÃO"
+    if "LIBERADA" in s: return "LIBERADA"
     return s
 
 # 🔧 ORGANIZAÇÃO
@@ -190,7 +183,6 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
 
     let y = 10;
 
-    // 🖼️ LOGO SEM DISTORÇÃO
     const logoUrl = "https://raw.githubusercontent.com/cavalcante-creator/Programa-o-pcp-dashboard/main/COL_LOGO_8.png";
 
     try {
@@ -206,7 +198,6 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
         const base64 = reader.result;
 
         const props = pdf.getImageProperties(base64);
-
         const largura = 30;
         const altura = (props.height * largura) / props.width;
 
@@ -220,16 +211,18 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
 
     y += 20;
 
+    // 🔥 FAIXA MAIS FINA
     pdf.setFillColor(44,62,80);
-    pdf.rect(10, y, 190, 12, 'F');
+    pdf.rect(10, y, 190, 8, 'F');
 
     pdf.setTextColor(255,255,255);
-    pdf.text("DATA: " + data, 15, y + 8);
-    pdf.text("LINHA: " + linha, 120, y + 8);
+    pdf.setFontSize(12);
+    pdf.text("DATA: " + data, 15, y + 5.5);
+    pdf.text("LINHA: " + linha, 120, y + 5.5);
 
     pdf.setTextColor(0,0,0);
 
-    y += 20;
+    y += 18;
 
     function campo(x,y,w,h,t,v){
         pdf.setFontSize(8);
@@ -290,7 +283,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
 <body>
 """
 
-# 🔄 LOOP ORIGINAL (INALTERADO)
+# LOOP (mantido igual)
 for linha, datas in estrutura.items():
 
     if linha_sel != "Todas" and linha != linha_sel:
@@ -340,25 +333,12 @@ for linha, datas in estrutura.items():
             produto = item.get("Produto", "")
             ordem = item.get("Ordem", "")
             status_original = item.get("Status", "")
-            status = limpar_status(status_original)
 
             qtde_total = item.get("Qtde Total", "0")
             qtde_pendente = item.get("Qtde Pendente", "0")
 
-            total = to_float(qtde_total)
-            pendente = to_float(qtde_pendente)
-
-            if "LIBERADA" in status:
-                classe = "liberada"
-            elif pendente == 0:
-                classe = "finalizado"
-            elif pendente < total:
-                classe = "producao"
-            else:
-                classe = "pendente"
-
             bloco += f"""
-            <div class='card {classe}'>
+            <div class='card'>
             <b>{produto}</b><br>
             Ordem: {ordem}<br>
             Turno: {item.get("Turno","-")}<br>
