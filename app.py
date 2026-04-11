@@ -136,8 +136,16 @@ if colb1.button("Hoje"):
 mostrar_todas = colb2.checkbox("Mostrar todas as datas", value=True)
 data_sel = data_input.strftime("%d/%m/%Y")
 
-# 🔥 LISTAS PARA PDF
+# 🆕 LISTA PARA PDF DA TELA
 dados_tela_js = []
+
+# 🔘 BOTÃO PDF TELA
+st.markdown(f"""
+<button onclick='exportarTela({json.dumps(dados_tela_js)})'
+style="padding:10px; background:#117a65; color:white; border:none; border-radius:8px;">
+📥 Baixar PDF da Tela Filtrada
+</button>
+""", unsafe_allow_html=True)
 
 # 🔥 HTML + PDF
 html = """
@@ -147,144 +155,141 @@ html = """
 
 <script>
 
-// PDF INDIVIDUAL (já existente)
-"""  # (mantive tudo igual daqui pra baixo, só adicionei funções novas)
-
-html += """
-
-async function exportarCard(produto, ordem, turno, qtde, pendente, status, data, linha){
+// 🆕 PDF TELA
+async function exportarTela(dados){
 
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF('p','mm','a4');
 
     let y = 10;
 
-    function campo(x,y,w,h,t,v){
-        pdf.setFontSize(8);
-        pdf.setFont("helvetica","bold");
-        pdf.text(t,x,y-1);
-        pdf.rect(x,y,w,h);
-        pdf.setFont("helvetica","normal");
+    pdf.setFont("helvetica","bold");
+    pdf.setFontSize(16);
+    pdf.text("PLANEJAMENTO PCP", 20, y);
+
+    y += 10;
+
+    for(let i = 0; i < dados.length; i++){
+
+        let item = dados[i];
+
+        if(y > 270){
+            pdf.addPage();
+            y = 10;
+        }
+
         pdf.setFontSize(10);
-        let linhas = pdf.splitTextToSize(v, w - 4);
-        pdf.text(linhas, x+2, y+6);
+
+        pdf.text("Linha: " + item.linha, 10, y); y+=5;
+        pdf.text("Data: " + item.data, 10, y); y+=5;
+        pdf.text("Produto: " + item.produto, 10, y); y+=5;
+        pdf.text("Ordem: " + item.ordem, 10, y); y+=5;
+        pdf.text("Turno: " + item.turno, 10, y); y+=5;
+        pdf.text("Qtde: " + item.qtde, 10, y); y+=5;
+        pdf.text("Pendente: " + item.pendente, 10, y); y+=5;
+
+        y += 5;
+        pdf.line(10, y, 200, y);
+        y += 5;
     }
-
-    campo(10,y,120,12,"PRODUTO",produto);
-    campo(130,y,70,12,"ORDEM",ordem);
-
-    y+=16;
-
-    campo(10,y,60,12,"TURNO",turno);
-    campo(70,y,60,12,"QTDE",qtde);
-    campo(130,y,70,12,"PENDENTE",pendente);
-
-    y+=16;
-
-    campo(10,y,120,12,"STATUS",status);
-    campo(130,y,70,12,"OPERADOR","");
-
-    y+=16;
-
-    campo(10,y,120,12,"RANCHO","");
-
-    pdf.save("ordem.pdf");
-}
-
-// PDF LINHA
-async function exportarLinha(dados, linha){
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF();
-
-    let y = 10;
-
-    dados.forEach(item=>{
-        pdf.text(item.produto + " - " + item.ordem, 10, y);
-        y+=6;
-    });
-
-    pdf.save("linha_"+linha+".pdf");
-}
-
-// PDF TELA
-async function exportarTela(dados){
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF();
-
-    let y = 10;
-
-    dados.forEach(item=>{
-        pdf.text(item.produto + " - " + item.ordem, 10, y);
-        y+=6;
-    });
 
     pdf.save("pcp_filtrado.pdf");
 }
 
-// RANCHO
-function anexarRancho(input, ordem){
-    const file = input.files[0];
-    if(file){
-        alert("Rancho anexado: " + file.name);
-    }
-}
-
 </script>
-</head>
-<body>
 """
 
-# 🔘 BOTÃO TELA
-st.markdown(f"""
-<button onclick='exportarTela({json.dumps(dados_tela_js)})'
-style="padding:10px; background:#117a65; color:white; border:none; border-radius:8px;">
-📥 Baixar PDF da Tela
-</button>
-""", unsafe_allow_html=True)
-
-# 🔄 LOOP NORMAL (mantido)
+# 🔄 LOOP (SEU ORIGINAL + 1 LINHA ADICIONADA)
 for linha, datas in estrutura.items():
 
-    bloco = f"<div><h2>{linha}</h2>"
-    dados_linha_js = []
+    if linha_sel != "Todas" and linha != linha_sel:
+        continue
+
+    bloco = f"<div class='linha'><h2>{linha}</h2>"
+    tem_linha = False
 
     for data, turnos in datas.items():
+
+        if not mostrar_todas and data != data_sel:
+            continue
+
+        itens_filtrados = []
+
         for turno, itens in turnos.items():
+
+            if turno_sel != "Todos":
+                continue
+
             for item in itens:
 
-                produto = item.get("Produto","")
-                ordem = item.get("Ordem","")
+                ordem = item.get("Ordem", "")
+                produto = item.get("Produto", "")
+                status_original = item.get("Status", "")
 
-                dados_linha_js.append({
-                    "produto": produto,
-                    "ordem": ordem
-                })
+                if ordem_pesquisa and ordem_pesquisa not in ordem:
+                    continue
 
+                if produto_pesquisa and produto_pesquisa.lower() not in produto.lower():
+                    continue
+
+                # 🆕 AQUI (única adição no loop)
                 dados_tela_js.append({
+                    "linha": linha,
+                    "data": data,
                     "produto": produto,
-                    "ordem": ordem
+                    "ordem": ordem,
+                    "turno": item.get("Turno","-"),
+                    "qtde": str(item.get("Qtde Total","0")),
+                    "pendente": str(item.get("Qtde Pendente","0"))
                 })
 
-                bloco += f"""
-                <div>
-                {produto} - {ordem}
+                itens_filtrados.append(item)
 
-                <button onclick="exportarCard('{produto}','{ordem}','{turno}','0','0','-','{data}','{linha}')">
-                PDF
-                </button>
+        if not itens_filtrados:
+            continue
 
-                <input type="file" onchange="anexarRancho(this,'{ordem}')">
-                </div>
-                """
+        tem_linha = True
+        bloco += f"<h3>📅 {data}</h3><div class='cards'>"
 
-    bloco += f"""
-    <button onclick='exportarLinha({json.dumps(dados_linha_js)}, "{linha}")'>
-    📥 Linha
-    </button>
-    </div>
-    """
+        for item in itens_filtrados:
 
-    html += bloco
+            produto = item.get("Produto", "")
+            ordem = item.get("Ordem", "")
+            status_original = item.get("Status", "")
+
+            qtde_total = item.get("Qtde Total", "0")
+            qtde_pendente = item.get("Qtde Pendente", "0")
+
+            total = to_float(qtde_total)
+            pendente = to_float(qtde_pendente)
+            status_lower = status_original.lower()
+
+            if "liberada" in status_lower:
+                classe = "liberada"
+            elif pendente == 0:
+                classe = "finalizado"
+            elif pendente < total:
+                classe = "producao"
+            else:
+                classe = "pendente"
+
+            bloco += f"""
+            <div class='card {classe}'>
+            <b>{produto}</b><br>
+            Ordem: {ordem}<br>
+            Turno: {item.get("Turno","-")}<br>
+            Qtde: {qtde_total}<br>
+            Pendente: {qtde_pendente}<br>
+            Status: {status_original}<br>
+            </div>
+            """
+
+        bloco += "</div>"
+
+    bloco += "</div>"
+
+    if tem_linha:
+        html += bloco
 
 html += "</body></html>"
 
