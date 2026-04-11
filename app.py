@@ -166,12 +166,6 @@ body { font-family: 'Segoe UI'; background: #f5f7fa; margin: 20px; }
     border-left: 5px solid transparent;
 }
 
-.producao { border-left: 5px solid #a9cce3; background: #f4f9fd; }
-.pendente { border-left: 5px solid #f5b7b1; background: #fdf2f2; }
-.finalizado { border-left: 5px solid #a9dfbf; background: #f3fbf6; }
-.reprogramado { border-left: 5px solid #d7bde2; background: #f8f4fb; }
-.liberada { border-left: 5px solid #f9e79f; background: #fef9e7; }
-
 button {
     margin-top:8px;
     padding:6px 10px;
@@ -188,43 +182,69 @@ function exportarCard(produto, ordem, turno, qtde, pendente, status){
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF('p','mm','a4');
 
-    pdf.setFontSize(16);
-    pdf.text("ORDEM DE PRODUÇÃO", 65, 15);
-
-    pdf.setFontSize(10);
-    pdf.text("Data: " + new Date().toLocaleDateString(), 150, 10);
-
-    // BOX SUPERIOR
-    pdf.rect(10, 20, 190, 70);
-
-    pdf.setFontSize(12);
-    pdf.text("Produto:", 15, 30);
-    pdf.text(produto, 15, 36);
-
-    pdf.text("Ordem: " + ordem, 15, 45);
-    pdf.text("Turno: " + turno, 15, 52);
-    pdf.text("Qtde: " + qtde, 15, 59);
-    pdf.text("Pendente: " + pendente, 15, 66);
-    pdf.text("Status: " + status, 15, 73);
-
-    // ETIQUETA
-    pdf.rect(10, 100, 190, 60);
-
     pdf.setFontSize(14);
-    pdf.text(produto, 15, 110);
+    pdf.text("ORDEM DE PRODUÇÃO", 70, 10);
+
+    pdf.setFontSize(9);
+    pdf.text("Data: " + new Date().toLocaleDateString(), 160, 10);
+
+    function celula(x, y, w, h, texto="") {
+        pdf.rect(x, y, w, h);
+        if(texto){
+            pdf.text(texto, x + 2, y + 5);
+        }
+    }
+
+    let y = 20;
+
+    celula(10, y, 40, 8, "Produto");
+    celula(50, y, 90, 8, produto);
+    celula(140, y, 30, 8, "Ordem");
+    celula(170, y, 30, 8, ordem);
+
+    y += 8;
+    celula(10, y, 40, 8, "Turno");
+    celula(50, y, 40, 8, turno);
+    celula(90, y, 40, 8, "Qtde");
+    celula(130, y, 40, 8, qtde);
+
+    y += 8;
+    celula(10, y, 40, 8, "Pendente");
+    celula(50, y, 40, 8, pendente);
+    celula(90, y, 40, 8, "Status");
+    celula(130, y, 40, 8, status);
+
+    y += 15;
+
+    let linhas = 8;
+    let colunas = 6;
+    let largura = 190 / colunas;
+    let altura = 10;
+
+    for(let i = 0; i < linhas; i++){
+        for(let j = 0; j < colunas; j++){
+            pdf.rect(10 + j * largura, y + i * altura, largura, altura);
+        }
+    }
+
+    y += (linhas * altura) + 10;
+
+    pdf.rect(10, y, 190, 50);
 
     pdf.setFontSize(12);
-    pdf.text("Ordem: " + ordem, 15, 120);
+    pdf.text(produto, 15, y + 10);
+    pdf.text("Ordem: " + ordem, 15, y + 20);
 
-    pdf.setFontSize(26);
-    pdf.text(qtde, 150, 135);
+    pdf.setFontSize(28);
+    pdf.text(qtde, 140, y + 35);
 
-    // ASSINATURAS
-    pdf.line(15, 180, 80, 180);
-    pdf.text("Operador", 15, 185);
+    y += 60;
 
-    pdf.line(110, 180, 180, 180);
-    pdf.text("Conferente", 110, 185);
+    pdf.line(15, y, 80, y);
+    pdf.text("Operador", 15, y + 5);
+
+    pdf.line(110, y, 180, y);
+    pdf.text("Conferente", 110, y + 5);
 
     pdf.save("ordem_producao.pdf");
 }
@@ -234,13 +254,14 @@ function exportarCard(produto, ordem, turno, qtde, pendente, status){
 <body>
 """
 
-# 🔄 LOOP
+# 🔄 LOOP COM CORREÇÃO
 for linha, datas in estrutura.items():
 
     if linha_sel != "Todas" and linha != linha_sel:
         continue
 
-    html += f"<div class='linha'><h2>{linha}</h2>"
+    bloco = f"<div class='linha'><h2>{linha}</h2>"
+    tem_linha = False
 
     for data, turnos in datas.items():
 
@@ -250,7 +271,7 @@ for linha, datas in estrutura.items():
         if not mostrar_todas and data != data_sel:
             continue
 
-        html += f"<h3>📅 {data}</h3><div class='cards'>"
+        conteudo_data = ""
 
         for turno, itens in turnos.items():
 
@@ -265,7 +286,7 @@ for linha, datas in estrutura.items():
                 qtde = item.get("Qtde Total", "0")
                 pendente = item.get("Qtde Pendente", "0")
 
-                html += f"""
+                conteudo_data += f"""
                 <div class='card'>
                 <b>{produto}</b><br><br>
 
@@ -289,9 +310,14 @@ for linha, datas in estrutura.items():
                 </div>
                 """
 
-        html += "</div>"
+        if conteudo_data:
+            tem_linha = True
+            bloco += f"<h3>📅 {data}</h3><div class='cards'>{conteudo_data}</div>"
 
-    html += "</div>"
+    bloco += "</div>"
+
+    if tem_linha:
+        html += bloco
 
 html += "</body></html>"
 
