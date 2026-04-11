@@ -142,7 +142,7 @@ if colb1.button("Hoje"):
 mostrar_todas = colb2.checkbox("Mostrar todas as datas", value=True)
 data_sel = data_input.strftime("%d/%m/%Y")
 
-# 🔥 HTML ORIGINAL + PDF AJUSTADO
+# 🔥 HTML + PDF
 html = """
 <html>
 <head>
@@ -190,7 +190,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
 
     let y = 10;
 
-    // 🖼️ LOGO
+    // 🖼️ LOGO SEM DISTORÇÃO
     const logoUrl = "https://raw.githubusercontent.com/cavalcante-creator/Programa-o-pcp-dashboard/main/COL_LOGO_8.png";
 
     try {
@@ -205,8 +205,10 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
 
         const base64 = reader.result;
 
+        const props = pdf.getImageProperties(base64);
+
         const largura = 30;
-        const altura = largura * 0.4;
+        const altura = (props.height * largura) / props.width;
 
         pdf.addImage(base64, 'PNG', 10, y, largura, altura);
 
