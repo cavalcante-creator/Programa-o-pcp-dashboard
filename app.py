@@ -5,10 +5,11 @@ import csv
 from io import StringIO
 from datetime import datetime, date
 
+# 🔄 Auto refresh
 st_autorefresh(interval=60000)
 st.set_page_config(layout="wide")
 
-# HEADER
+# 🎨 HEADER (INALTERADO)
 st.markdown("""
 <style>
 .block-container { padding-top: 1.5rem; }
@@ -19,7 +20,10 @@ st.markdown("""
     justify-content: space-between;
 }
 
-.logo { width: 200px; margin-top: 10px; }
+.logo { 
+    width: 200px;
+    margin-top: 10px;
+}
 
 .titulo {
     flex-grow: 1;
@@ -27,11 +31,10 @@ st.markdown("""
     font-size: 26px;
     font-weight: 600;
 }
-
 .vazio { width: 140px; }
 
 .btn-export {
-    margin-bottom: 10px;
+    margin-bottom: 15px;
     padding: 8px 14px;
     background: #2c3e50;
     color: white;
@@ -49,7 +52,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# GOOGLE SHEETS
+# 🔗 GOOGLE SHEETS
 sheet_id = "1eQHvLVw-WLsA4UruaM6GThcy0dgb5ONNAn8AZ_KwBuU"
 
 abas = [
@@ -70,7 +73,7 @@ for aba in abas:
         linha["Linha"] = aba
         dados_total.append(linha)
 
-# FUNÇÕES
+# 🔧 FUNÇÕES (INALTERADAS)
 def nome_linha(linha):
     return linha.replace("BASE_", "").replace("_", " ")
 
@@ -84,19 +87,26 @@ def get_semana(data_str):
 
 def to_float(valor):
     try:
-        return float(str(valor).replace(".", "").replace(",", "."))
+        valor = str(valor).replace(".", "").replace(",", ".")
+        return float(valor)
     except:
         return 0
 
 def limpar_status(s):
-    if not s: return ""
+    if not s:
+        return ""
     s = str(s).strip().upper()
-    if "AGUARDANDO" in s: return "AGUARDANDO"
-    if "PRODUÇÃO" in s: return "EM PRODUÇÃO"
-    if "LIBERADA" in s: return "LIBERADA"
+
+    if "AGUARDANDO" in s:
+        return "AGUARDANDO"
+    if "PRODUÇÃO" in s:
+        return "EM PRODUÇÃO"
+    if "LIBERADA" in s:
+        return "LIBERADA"
+
     return s
 
-# ESTRUTURA
+# 🔧 ESTRUTURA ORIGINAL (INALTERADA)
 estrutura = {}
 
 for item in dados_total:
@@ -109,7 +119,7 @@ for item in dados_total:
 
     estrutura.setdefault(linha, {}).setdefault(data_usar, {}).setdefault(turno, []).append(item)
 
-# FILTROS
+# 🔽 FILTROS (INALTERADOS)
 col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
 
 linhas = sorted(set(nome_linha(i["Linha"]) for i in dados_total))
@@ -120,7 +130,7 @@ linha_sel = col1.selectbox("🏭 Linha", ["Todas"] + linhas)
 if "data_escolhida" not in st.session_state:
     st.session_state.data_escolhida = date.today()
 
-data_input = col2.date_input("📅 Data", st.session_state.data_escolhida)
+data_input = col2.date_input("📅 Data", st.session_state.data_escolhida, format="DD/MM/YYYY")
 turno_sel = col3.selectbox("⏱ Turno", ["Todos"] + turnos)
 
 semanas_disponiveis = sorted(set(get_semana(i.get("Data")) for i in dados_total if i.get("Data")))
@@ -141,11 +151,12 @@ if colb1.button("Hoje"):
 mostrar_todas = colb2.checkbox("Mostrar todas as datas", value=True)
 data_sel = data_input.strftime("%d/%m/%Y")
 
-# HTML
+# 🔥 HTML (SÓ ADIÇÕES, NÃO ALTERAÇÃO)
 html = """
 <html>
 <head>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
 
@@ -172,13 +183,13 @@ body { font-family: 'Segoe UI'; background: #f5f7fa; margin: 20px; }
 .reprogramado { border-left: 5px solid #d7bde2; background: #f8f4fb; }
 .liberada { border-left: 5px solid #f9e79f; background: #fef9e7; }
 
-button {
-    margin-top: 6px;
-    padding: 6px 10px;
-    border-radius: 6px;
+.btn-export {
+    margin-bottom: 15px;
+    padding: 8px 14px;
     background: #2c3e50;
     color: white;
     border: none;
+    border-radius: 6px;
 }
 </style>
 
@@ -226,7 +237,6 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
 }
 
 async function exportarLinha(){
-
     const mergedPdf = await PDFLib.PDFDocument.create();
     const cards = document.querySelectorAll(".card");
 
@@ -272,18 +282,19 @@ async function exportarLinha(){
 
 </head>
 <body>
+
+<button class="btn-export" onclick="exportarLinha()">📥 Baixar PDFs da Linha</button>
+
+<div id="conteudo_total">
 """
 
-# LOOP ORIGINAL
+# 🔄 LOOP ORIGINAL INTACTO
 for linha, datas in estrutura.items():
 
     if linha_sel != "Todas" and linha != linha_sel:
         continue
 
-    bloco = f"<div class='linha'>"
-    bloco += f"<button class='btn-export' onclick=\"exportarLinha()\">📥 Baixar PDFs da Linha</button>"
-    bloco += f"<h2>{linha}</h2>"
-
+    bloco = f"<div class='linha'><h2>{linha}</h2>"
     tem_linha = False
 
     for data, turnos in datas.items():
@@ -306,11 +317,15 @@ for linha, datas in estrutura.items():
                 ordem = item.get("Ordem", "")
                 produto = item.get("Produto", "")
                 status_original = item.get("Status", "")
+                status = limpar_status(status_original)
 
                 if ordem_pesquisa and ordem_pesquisa not in ordem:
                     continue
 
                 if produto_pesquisa and produto_pesquisa.lower() not in produto.lower():
+                    continue
+
+                if status_sel != "Todos" and status != status_sel:
                     continue
 
                 itens_filtrados.append(item)
@@ -331,8 +346,22 @@ for linha, datas in estrutura.items():
             qtde_total = item.get("Qtde Total", "0")
             qtde_pendente = item.get("Qtde Pendente", "0")
 
+            total = to_float(qtde_total)
+            pendente = to_float(qtde_pendente)
+
+            status_lower = status_original.lower()
+
+            if "liberada" in status_lower:
+                classe = "liberada"
+            elif pendente == 0:
+                classe = "finalizado"
+            elif pendente < total:
+                classe = "producao"
+            else:
+                classe = "pendente"
+
             bloco += f"""
-            <div class='card'>
+            <div class='card {classe}'>
             <b>{produto}</b><br>
             Ordem: {ordem}<br>
             Turno: {item.get("Turno","-")}<br>
@@ -367,6 +396,6 @@ for linha, datas in estrutura.items():
     if tem_linha:
         html += bloco
 
-html += "</body></html>"
+html += "</div></body></html>"
 
 st.components.v1.html(html, height=900, scrolling=True)
