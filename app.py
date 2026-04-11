@@ -97,7 +97,7 @@ def limpar_status(s):
 
     return s
 
-# 🔧 ORGANIZAÇÃO (SEM DUPLICAÇÃO)
+# 🔧 ORGANIZAÇÃO
 estrutura = {}
 
 for item in dados_total:
@@ -167,7 +167,6 @@ body { font-family: 'Segoe UI'; background: #f5f7fa; margin: 20px; }
     border-left: 5px solid transparent;
 }
 
-/* 🎨 CORES PASTEL */
 .producao { border-left: 5px solid #a9cce3; background: #f4f9fd; }
 .pendente { border-left: 5px solid #f5b7b1; background: #fdf2f2; }
 .finalizado { border-left: 5px solid #a9dfbf; background: #f3fbf6; }
@@ -198,6 +197,21 @@ async function exportarTudo() {
 
     pdf.addImage(imgData, 'PNG', 10, 10, largura, altura);
     pdf.save("programacao.pdf");
+}
+
+async function exportarCard(cardId) {
+    const { jsPDF } = window.jspdf;
+    let elemento = document.getElementById(cardId);
+
+    const canvas = await html2canvas(elemento, { scale: 2 });
+    const imgData = canvas.toDataURL("image/png");
+
+    const pdf = new jsPDF('p','mm','a4');
+    const largura = 180;
+    const altura = (canvas.height * largura) / canvas.width;
+
+    pdf.addImage(imgData, 'PNG', 15, 20, largura, altura);
+    pdf.save("ordem_producao.pdf");
 }
 </script>
 
@@ -285,16 +299,29 @@ for linha, datas in estrutura.items():
             else:
                 classe = "pendente"
 
+            card_id = f"card_{ordem}_{data}".replace(" ", "").replace("/", "")
+
             bloco += f"""
-            <div class='card {classe}'>
-            <b>{produto}</b><br>
-            Ordem: {ordem}<br>
-            Turno: {item.get("Turno","-")}<br>
-            Qtde: {qtde_total}<br>
-            Status: {status_original}<br>
-            Pendente: {qtde_pendente}<br>
-            {"Ensacado: " + item.get("Ensacado","") + "<br>" if item.get("Ensacado") else ""}
-            {"🔁 Nova Data: " + nova_data if nova_data else ""}
+            <div id="{card_id}" class='card {classe}'>
+
+            <b style="font-size:16px;">{produto}</b><br><br>
+
+            <b>Ordem:</b> {ordem}<br>
+            <b>Turno:</b> {item.get("Turno","-")}<br>
+            <b>Qtde:</b> {qtde_total}<br>
+            <b>Pendente:</b> {qtde_pendente}<br>
+            <b>Status:</b> {status_original}<br>
+
+            {"<b>Ensacado:</b> " + item.get("Ensacado","") + "<br>" if item.get("Ensacado") else ""}
+            {"<b>Nova Data:</b> " + nova_data + "<br>" if nova_data else ""}
+
+            <br>
+
+            <button onclick="exportarCard('{card_id}')" 
+            style="margin-top:8px;padding:6px 10px;border:none;border-radius:6px;background:#34495e;color:white;">
+            📄 Gerar PDF
+            </button>
+
             </div>
             """
 
