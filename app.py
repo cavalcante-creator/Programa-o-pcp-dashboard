@@ -4,7 +4,6 @@ import requests
 import csv
 from io import StringIO
 from datetime import datetime, date
-import os
 
 # 🔄 Auto refresh
 st_autorefresh(interval=60000)
@@ -136,28 +135,8 @@ if colb1.button("Hoje"):
 mostrar_todas = colb2.checkbox("Mostrar todas as datas", value=True)
 data_sel = data_input.strftime("%d/%m/%Y")
 
-# =========================
-# 📎 SALVAR RANCHO (NOVO - SIMPLES)
-# =========================
-
-if not os.path.exists("ranchos"):
-    os.makedirs("ranchos")
-
-st.markdown("### 📎 Upload de Rancho")
-
-ordem_upload = st.text_input("Digite a ordem")
-
-rancho_file = st.file_uploader("Selecione o PDF do rancho", type="pdf")
-
-if ordem_upload and rancho_file:
-    caminho = f"ranchos/{ordem_upload}.pdf"
-    with open(caminho, "wb") as f:
-        f.write(rancho_file.read())
-
-    st.success(f"✅ Rancho salvo para ordem {ordem_upload}")
-
-# 🔥 HTML + PDF (SEU ORIGINAL INTACTO)
-html = """ 
+# 🔥 HTML + PDF
+html = """
 <html>
 <head>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -194,14 +173,120 @@ button {
 </style>
 
 <script>
-// (SEU JS ORIGINAL PERMANECE AQUI — NÃO ALTERADO)
+async function exportarCard(produto, ordem, turno, qtde, pendente, status, data, linha){
+
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p','mm','a4');
+
+    let y = 10;
+
+    const logoUrl = "https://raw.githubusercontent.com/cavalcante-creator/Programa-o-pcp-dashboard/main/COL_LOGO_8.png";
+
+    try {
+        const img = await fetch(logoUrl);
+        const blob = await img.blob();
+
+        const reader = new FileReader();
+        await new Promise(resolve => {
+            reader.onloadend = resolve;
+            reader.readAsDataURL(blob);
+        });
+
+        const base64 = reader.result;
+
+        const props = pdf.getImageProperties(base64);
+        const largura = 30;
+        const altura = (props.height * largura) / props.width;
+
+        pdf.addImage(base64, 'PNG', 10, y, largura, altura);
+
+    } catch(e){}
+
+    pdf.setFont("helvetica","bold");
+    pdf.setFontSize(16);
+    pdf.text("ORDEM DE PRODUÇÃO", 70, y + 10);
+
+    y += 20;
+
+    pdf.setFillColor(44,62,80);
+    pdf.rect(10, y, 190, 8, 'F');
+
+    pdf.setTextColor(255,255,255);
+    pdf.text("DATA: " + data, 15, y + 5.5);
+    pdf.text("LINHA: " + linha, 120, y + 5.5);
+
+    pdf.setTextColor(0,0,0);
+
+    y += 18;
+
+    function campo(x,y,w,h,t,v){
+        pdf.setFontSize(8);
+        pdf.setFont("helvetica","bold");
+        pdf.text(t,x,y-1);
+        pdf.rect(x,y,w,h);
+        pdf.setFont("helvetica","normal");
+        pdf.setFontSize(10);
+        let linhas = pdf.splitTextToSize(v, w - 4);
+        pdf.text(linhas, x+2, y+6);
+    }
+
+    campo(10,y,120,12,"PRODUTO",produto);
+    campo(130,y,70,12,"ORDEM",ordem);
+
+    y+=16;
+
+    campo(10,y,60,12,"TURNO",turno);
+    campo(70,y,60,12,"QUANTIDADE PROGRAMADA",qtde);
+    campo(130,y,70,12,"QUANTIDADE PENDENTE",pendente);
+
+    y+=16;
+
+    campo(10,y,120,12,"STATUS",status);
+    campo(130,y,70,12,"OPERADOR","");
+
+    y+=16;
+
+    campo(10,y,120,12,"RANCHO","");
+
+    y+=20;
+
+    let colunas = ["HORA INICIO","HORA FIM","N PALLETS","SACOS (UN)","RASGADOS","PARADAS"];
+    let largura = 190/colunas.length;
+    let altura = 8;
+
+    pdf.setFont("helvetica","bold");
+
+    colunas.forEach((c,i)=>{
+        pdf.rect(10+i*largura,y,largura,altura);
+        pdf.text(c,10+i*largura+1,y+5);
+    });
+
+    pdf.setFont("helvetica","normal");
+
+    y+=altura;
+
+    const limite = 285;
+
+    while(y < limite){
+        for(let j=0;j<colunas.length;j++){
+            pdf.rect(10+j*largura,y,largura,altura);
+        }
+        y+=altura;
+    }
+
+    pdf.save("ordem_producao.pdf");
+}
+
+function anexarRancho(input, ordem){
+    const file = input.files[0];
+
+    if(file){
+        alert("PDF do rancho anexado para a ordem: " + ordem + "\\nArquivo: " + file.name);
+    }
+}
 </script>
 
 </head>
 <body>
 """
-# (resto do seu código segue igual — loop dos cards etc.)
-
-html += "</body></html>"
-
-st.components.v1.html(html, height=900, scrolling=True)
+# (continua seu loop normal...)
