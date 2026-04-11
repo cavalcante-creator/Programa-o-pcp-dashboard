@@ -121,7 +121,7 @@ produto_pesquisa = col6.text_input("🔎 Buscar Produto")
 status_lista = sorted(set(limpar_status(i.get("Status")) for i in dados_total if i.get("Status")))
 status_sel = col7.selectbox("📌 Status", ["Todos"] + status_lista)
 
-colb1, colb2, colb3 = st.columns(3)
+colb1, colb2 = st.columns(2)
 
 if colb1.button("Hoje"):
     st.session_state.data_escolhida = date.today()
@@ -130,7 +130,7 @@ if colb1.button("Hoje"):
 mostrar_todas = colb2.checkbox("Mostrar todas as datas", value=True)
 data_sel = data_input.strftime("%d/%m/%Y")
 
-# 🔥 HTML + PDF BONITO
+# 🔥 HTML + PDF
 html = """
 <html>
 <head>
@@ -139,11 +139,8 @@ html = """
 
 <style>
 body { font-family: 'Segoe UI'; background: #f5f7fa; margin: 20px; }
-
 .linha h2 { background: #2c3e50; color: white; padding: 10px; border-radius: 8px; }
-
 .cards { display: flex; flex-wrap: wrap; }
-
 .card {
     width: 260px;
     padding: 12px;
@@ -152,7 +149,6 @@ body { font-family: 'Segoe UI'; background: #f5f7fa; margin: 20px; }
     background: white;
     box-shadow: 0px 4px 12px rgba(0,0,0,0.06);
 }
-
 button {
     margin-top:8px;
     padding:6px 10px;
@@ -175,44 +171,42 @@ function exportarCard(produto, ordem, turno, qtde, pendente, status){
     pdf.setFontSize(16);
     pdf.text("ORDEM DE PRODUÇÃO", 60, y);
 
-    pdf.setFont("helvetica","normal");
     pdf.setFontSize(9);
-    pdf.text("Data: " + new Date().toLocaleDateString(), 160, y);
+    pdf.setFont("helvetica","normal");
+    pdf.text("DATA: " + new Date().toLocaleDateString(), 150, y);
 
-    y += 10;
+    y += 12;
 
-    function celula(x, y, w, h, texto="") {
+    function campo(x, y, w, h, titulo, valor) {
+        pdf.setFont("helvetica","bold");
+        pdf.setFontSize(8);
+        pdf.text(titulo.toUpperCase(), x, y - 1);
+
         pdf.rect(x, y, w, h);
-        if(texto){
-            let linhas = pdf.splitTextToSize(texto, w - 4);
-            pdf.text(linhas, x + 2, y + 5);
-        }
+
+        pdf.setFont("helvetica","normal");
+        pdf.setFontSize(10);
+
+        let linhas = pdf.splitTextToSize(valor, w - 4);
+        pdf.text(linhas, x + 2, y + 6);
     }
 
-    pdf.setFontSize(10);
+    campo(10, y, 120, 12, "PRODUTO", produto);
+    campo(130, y, 70, 12, "ORDEM", ordem);
 
-    celula(10, y, 40, 10, "Produto");
-    celula(50, y, 90, 10, produto);
-    celula(140, y, 30, 10, "Ordem");
-    celula(170, y, 30, 10, ordem);
+    y += 16;
 
-    y += 10;
+    campo(10, y, 60, 12, "TURNO", turno);
+    campo(70, y, 60, 12, "QUANTIDADE", qtde);
+    campo(130, y, 70, 12, "PENDENTE", pendente);
 
-    celula(10, y, 40, 10, "Turno");
-    celula(50, y, 40, 10, turno);
-    celula(90, y, 40, 10, "Qtde");
-    celula(130, y, 40, 10, qtde);
+    y += 16;
 
-    y += 10;
+    campo(10, y, 190, 12, "STATUS", status);
 
-    celula(10, y, 40, 10, "Pendente");
-    celula(50, y, 40, 10, pendente);
-    celula(90, y, 40, 10, "Status");
-    celula(130, y, 40, 10, status);
+    y += 20;
 
-    y += 15;
-
-    let colunas = ["Hora", "Produzido", "Refugo", "Parada", "Motivo", "Operador"];
+    let colunas = ["HORA", "PRODUZIDO", "REFUGO", "PARADA", "MOTIVO", "OPERADOR"];
     let largura = 190 / colunas.length;
     let altura = 10;
 
@@ -234,29 +228,29 @@ function exportarCard(produto, ordem, turno, qtde, pendente, status){
         y += altura;
     }
 
-    y += 5;
+    y += 10;
 
     pdf.rect(10, y, 190, 50);
 
+    pdf.setFont("helvetica","bold");
     pdf.setFontSize(12);
-    pdf.setFont("helvetica","bold");
-    pdf.text(produto, 15, y + 10);
+    pdf.text(produto.toUpperCase(), 15, y + 12);
 
-    pdf.setFont("helvetica","normal");
-    pdf.text("Ordem: " + ordem, 15, y + 20);
+    pdf.setFontSize(11);
+    pdf.text("ORDEM: " + ordem, 15, y + 22);
 
-    pdf.setFontSize(28);
-    pdf.setFont("helvetica","bold");
-    pdf.text(qtde, 150, y + 35);
+    pdf.setFontSize(30);
+    pdf.text(qtde, 145, y + 35);
 
     y += 60;
 
     pdf.setFontSize(10);
+
     pdf.line(15, y, 80, y);
-    pdf.text("Operador", 15, y + 5);
+    pdf.text("OPERADOR", 15, y + 5);
 
     pdf.line(110, y, 180, y);
-    pdf.text("Conferente", 110, y + 5);
+    pdf.text("CONFERENTE", 110, y + 5);
 
     pdf.save("ordem_producao.pdf");
 }
