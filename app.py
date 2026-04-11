@@ -76,25 +76,13 @@ def get_semana(data_str):
     except:
         return ""
 
-def to_float(valor):
-    try:
-        valor = str(valor).replace(".", "").replace(",", ".")
-        return float(valor)
-    except:
-        return 0
-
 def limpar_status(s):
     if not s:
         return ""
     s = str(s).strip().upper()
-
-    if "AGUARDANDO" in s:
-        return "AGUARDANDO"
-    if "PRODUÇÃO" in s:
-        return "EM PRODUÇÃO"
-    if "LIBERADA" in s:
-        return "LIBERADA"
-
+    if "AGUARDANDO" in s: return "AGUARDANDO"
+    if "PRODUÇÃO" in s: return "EM PRODUÇÃO"
+    if "LIBERADA" in s: return "LIBERADA"
     return s
 
 # 🔧 ORGANIZAÇÃO
@@ -142,7 +130,7 @@ if colb1.button("Hoje"):
 mostrar_todas = colb2.checkbox("Mostrar todas as datas", value=True)
 data_sel = data_input.strftime("%d/%m/%Y")
 
-# 🔥 HTML + PDF
+# 🔥 HTML + PDF BONITO
 html = """
 <html>
 <head>
@@ -163,7 +151,6 @@ body { font-family: 'Segoe UI'; background: #f5f7fa; margin: 20px; }
     border-radius: 12px;
     background: white;
     box-shadow: 0px 4px 12px rgba(0,0,0,0.06);
-    border-left: 5px solid transparent;
 }
 
 button {
@@ -182,64 +169,89 @@ function exportarCard(produto, ordem, turno, qtde, pendente, status){
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF('p','mm','a4');
 
-    pdf.setFontSize(14);
-    pdf.text("ORDEM DE PRODUÇÃO", 70, 10);
+    let y = 15;
 
+    pdf.setFont("helvetica","bold");
+    pdf.setFontSize(16);
+    pdf.text("ORDEM DE PRODUÇÃO", 60, y);
+
+    pdf.setFont("helvetica","normal");
     pdf.setFontSize(9);
-    pdf.text("Data: " + new Date().toLocaleDateString(), 160, 10);
+    pdf.text("Data: " + new Date().toLocaleDateString(), 160, y);
+
+    y += 10;
 
     function celula(x, y, w, h, texto="") {
         pdf.rect(x, y, w, h);
         if(texto){
-            pdf.text(texto, x + 2, y + 5);
+            let linhas = pdf.splitTextToSize(texto, w - 4);
+            pdf.text(linhas, x + 2, y + 5);
         }
     }
 
-    let y = 20;
+    pdf.setFontSize(10);
 
-    celula(10, y, 40, 8, "Produto");
-    celula(50, y, 90, 8, produto);
-    celula(140, y, 30, 8, "Ordem");
-    celula(170, y, 30, 8, ordem);
+    celula(10, y, 40, 10, "Produto");
+    celula(50, y, 90, 10, produto);
+    celula(140, y, 30, 10, "Ordem");
+    celula(170, y, 30, 10, ordem);
 
-    y += 8;
-    celula(10, y, 40, 8, "Turno");
-    celula(50, y, 40, 8, turno);
-    celula(90, y, 40, 8, "Qtde");
-    celula(130, y, 40, 8, qtde);
+    y += 10;
 
-    y += 8;
-    celula(10, y, 40, 8, "Pendente");
-    celula(50, y, 40, 8, pendente);
-    celula(90, y, 40, 8, "Status");
-    celula(130, y, 40, 8, status);
+    celula(10, y, 40, 10, "Turno");
+    celula(50, y, 40, 10, turno);
+    celula(90, y, 40, 10, "Qtde");
+    celula(130, y, 40, 10, qtde);
+
+    y += 10;
+
+    celula(10, y, 40, 10, "Pendente");
+    celula(50, y, 40, 10, pendente);
+    celula(90, y, 40, 10, "Status");
+    celula(130, y, 40, 10, status);
 
     y += 15;
 
-    let linhas = 8;
-    let colunas = 6;
-    let largura = 190 / colunas;
+    let colunas = ["Hora", "Produzido", "Refugo", "Parada", "Motivo", "Operador"];
+    let largura = 190 / colunas.length;
     let altura = 10;
 
-    for(let i = 0; i < linhas; i++){
-        for(let j = 0; j < colunas; j++){
-            pdf.rect(10 + j * largura, y + i * altura, largura, altura);
+    pdf.setFont("helvetica","bold");
+
+    colunas.forEach((col, i) => {
+        pdf.rect(10 + i * largura, y, largura, altura);
+        pdf.text(col, 10 + i * largura + 2, y + 6);
+    });
+
+    pdf.setFont("helvetica","normal");
+
+    y += altura;
+
+    for(let i = 0; i < 8; i++){
+        for(let j = 0; j < colunas.length; j++){
+            pdf.rect(10 + j * largura, y, largura, altura);
         }
+        y += altura;
     }
 
-    y += (linhas * altura) + 10;
+    y += 5;
 
     pdf.rect(10, y, 190, 50);
 
     pdf.setFontSize(12);
+    pdf.setFont("helvetica","bold");
     pdf.text(produto, 15, y + 10);
+
+    pdf.setFont("helvetica","normal");
     pdf.text("Ordem: " + ordem, 15, y + 20);
 
     pdf.setFontSize(28);
-    pdf.text(qtde, 140, y + 35);
+    pdf.setFont("helvetica","bold");
+    pdf.text(qtde, 150, y + 35);
 
     y += 60;
 
+    pdf.setFontSize(10);
     pdf.line(15, y, 80, y);
     pdf.text("Operador", 15, y + 5);
 
@@ -254,7 +266,7 @@ function exportarCard(produto, ordem, turno, qtde, pendente, status){
 <body>
 """
 
-# 🔄 LOOP COM CORREÇÃO
+# 🔄 LOOP
 for linha, datas in estrutura.items():
 
     if linha_sel != "Todas" and linha != linha_sel:
@@ -271,7 +283,7 @@ for linha, datas in estrutura.items():
         if not mostrar_todas and data != data_sel:
             continue
 
-        conteudo_data = ""
+        conteudo = ""
 
         for turno, itens in turnos.items():
 
@@ -286,7 +298,7 @@ for linha, datas in estrutura.items():
                 qtde = item.get("Qtde Total", "0")
                 pendente = item.get("Qtde Pendente", "0")
 
-                conteudo_data += f"""
+                conteudo += f"""
                 <div class='card'>
                 <b>{produto}</b><br><br>
 
@@ -310,9 +322,9 @@ for linha, datas in estrutura.items():
                 </div>
                 """
 
-        if conteudo_data:
+        if conteudo:
             tem_linha = True
-            bloco += f"<h3>📅 {data}</h3><div class='cards'>{conteudo_data}</div>"
+            bloco += f"<h3>📅 {data}</h3><div class='cards'>{conteudo}</div>"
 
     bloco += "</div>"
 
