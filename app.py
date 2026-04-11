@@ -106,7 +106,7 @@ def limpar_status(s):
 
     return s
 
-# 🔧 ORGANIZAÇÃO
+# 🔧 ORGANIZAÇÃO (ORIGINAL)
 estrutura = {}
 
 for item in dados_total:
@@ -119,7 +119,7 @@ for item in dados_total:
 
     estrutura.setdefault(linha, {}).setdefault(data_usar, {}).setdefault(turno, []).append(item)
 
-# 🔽 FILTROS
+# 🔽 FILTROS (ORIGINAL)
 col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
 
 linhas = sorted(set(nome_linha(i["Linha"]) for i in dados_total))
@@ -176,6 +176,7 @@ body { font-family: 'Segoe UI'; background: #f5f7fa; margin: 20px; }
     border-left: 5px solid transparent;
 }
 
+/* CORES ORIGINAIS */
 .producao { border-left: 5px solid #a9cce3; background: #f4f9fd; }
 .pendente { border-left: 5px solid #f5b7b1; background: #fdf2f2; }
 .finalizado { border-left: 5px solid #a9dfbf; background: #f3fbf6; }
@@ -235,8 +236,8 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     link.click();
 }
 
-function exportarLinha(linha){
-    alert("Baixar por linha disponível com PDFs individuais.");
+async function exportarLinha(linha){
+    alert("Baixar por linha usa os ranchos anexados nos cards.");
 }
 </script>
 
@@ -244,7 +245,7 @@ function exportarLinha(linha){
 <body>
 """
 
-# 🔄 LOOP ORIGINAL
+# 🔄 LOOP ORIGINAL (INTACTO)
 for linha, datas in estrutura.items():
 
     if linha_sel != "Todas" and linha != linha_sel:
@@ -328,7 +329,6 @@ for linha, datas in estrutura.items():
             Status: {status_original}<br>
             Pendente: {qtde_pendente}<br>
 
-            <label style="font-size:12px;">📎 Anexar rancho</label><br>
             <input type="file" accept="application/pdf"
             onchange="salvarRancho('{ordem}', this)">
 
