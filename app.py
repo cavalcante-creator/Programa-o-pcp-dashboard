@@ -142,12 +142,11 @@ if colb1.button("Hoje"):
 mostrar_todas = colb2.checkbox("Mostrar todas as datas", value=True)
 data_sel = data_input.strftime("%d/%m/%Y")
 
-# 🔥 HTML
+# 🔥 HTML + PDF
 html = """
 <html>
 <head>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <style>
@@ -173,54 +172,66 @@ body { font-family: 'Segoe UI'; background: #f5f7fa; margin: 20px; }
 .reprogramado { border-left: 5px solid #d7bde2; background: #f8f4fb; }
 .liberada { border-left: 5px solid #f9e79f; background: #fef9e7; }
 
-.btn-export {
-    margin-bottom: 15px;
-    padding: 8px 14px;
-    background: #2c3e50;
-    color: white;
-    border: none;
-    border-radius: 6px;
+button {
+    margin-top:8px;
+    padding:6px 10px;
+    border:none;
+    border-radius:6px;
+    background:#34495e;
+    color:white;
 }
 </style>
 
 <script>
-async function exportarTudo() {
+function exportarCard(produto, ordem, turno, qtde, pendente, status){
+
     const { jsPDF } = window.jspdf;
-    let elemento = document.getElementById("conteudo_total");
-
-    const canvas = await html2canvas(elemento, { scale: 2 });
-    const imgData = canvas.toDataURL("image/png");
-
     const pdf = new jsPDF('p','mm','a4');
-    const largura = 190;
-    const altura = (canvas.height * largura) / canvas.width;
 
-    pdf.addImage(imgData, 'PNG', 10, 10, largura, altura);
-    pdf.save("programacao.pdf");
-}
+    pdf.setFontSize(16);
+    pdf.text("ORDEM DE PRODUÇÃO", 65, 15);
 
-async function exportarCard(cardId) {
-    const { jsPDF } = window.jspdf;
-    let elemento = document.getElementById(cardId);
+    pdf.setFontSize(10);
+    pdf.text("Data: " + new Date().toLocaleDateString(), 150, 10);
 
-    const canvas = await html2canvas(elemento, { scale: 2 });
-    const imgData = canvas.toDataURL("image/png");
+    // BOX SUPERIOR
+    pdf.rect(10, 20, 190, 70);
 
-    const pdf = new jsPDF('p','mm','a4');
-    const largura = 180;
-    const altura = (canvas.height * largura) / canvas.width;
+    pdf.setFontSize(12);
+    pdf.text("Produto:", 15, 30);
+    pdf.text(produto, 15, 36);
 
-    pdf.addImage(imgData, 'PNG', 15, 20, largura, altura);
+    pdf.text("Ordem: " + ordem, 15, 45);
+    pdf.text("Turno: " + turno, 15, 52);
+    pdf.text("Qtde: " + qtde, 15, 59);
+    pdf.text("Pendente: " + pendente, 15, 66);
+    pdf.text("Status: " + status, 15, 73);
+
+    // ETIQUETA
+    pdf.rect(10, 100, 190, 60);
+
+    pdf.setFontSize(14);
+    pdf.text(produto, 15, 110);
+
+    pdf.setFontSize(12);
+    pdf.text("Ordem: " + ordem, 15, 120);
+
+    pdf.setFontSize(26);
+    pdf.text(qtde, 150, 135);
+
+    // ASSINATURAS
+    pdf.line(15, 180, 80, 180);
+    pdf.text("Operador", 15, 185);
+
+    pdf.line(110, 180, 180, 180);
+    pdf.text("Conferente", 110, 185);
+
     pdf.save("ordem_producao.pdf");
 }
 </script>
 
 </head>
 <body>
-
-<button class="btn-export" onclick="exportarTudo()">📄 Exportar Tudo</button>
-
-<div id="conteudo_total">
 """
 
 # 🔄 LOOP
@@ -229,8 +240,7 @@ for linha, datas in estrutura.items():
     if linha_sel != "Todas" and linha != linha_sel:
         continue
 
-    bloco = f"<div class='linha'><h2>{linha}</h2>"
-    tem_linha = False
+    html += f"<div class='linha'><h2>{linha}</h2>"
 
     for data, turnos in datas.items():
 
@@ -240,7 +250,7 @@ for linha, datas in estrutura.items():
         if not mostrar_todas and data != data_sel:
             continue
 
-        itens_filtrados = []
+        html += f"<h3>📅 {data}</h3><div class='cards'>"
 
         for turno, itens in turnos.items():
 
@@ -249,89 +259,40 @@ for linha, datas in estrutura.items():
 
             for item in itens:
 
-                ordem = item.get("Ordem", "")
                 produto = item.get("Produto", "")
-                status_original = item.get("Status", "")
-                status = limpar_status(status_original)
+                ordem = item.get("Ordem", "")
+                status = item.get("Status", "")
+                qtde = item.get("Qtde Total", "0")
+                pendente = item.get("Qtde Pendente", "0")
 
-                if ordem_pesquisa and ordem_pesquisa not in ordem:
-                    continue
+                html += f"""
+                <div class='card'>
+                <b>{produto}</b><br><br>
 
-                if produto_pesquisa and produto_pesquisa.lower() not in produto.lower():
-                    continue
+                Ordem: {ordem}<br>
+                Turno: {turno}<br>
+                Qtde: {qtde}<br>
+                Pendente: {pendente}<br>
+                Status: {status}<br>
 
-                if status_sel != "Todos" and status != status_sel:
-                    continue
+                <button onclick="exportarCard(
+                    '{produto}',
+                    '{ordem}',
+                    '{turno}',
+                    '{qtde}',
+                    '{pendente}',
+                    '{status}'
+                )">
+                📄 Gerar PDF
+                </button>
 
-                itens_filtrados.append(item)
+                </div>
+                """
 
-        if not itens_filtrados:
-            continue
+        html += "</div>"
 
-        tem_linha = True
-        bloco += f"<h3>📅 {data}</h3>"
-        bloco += "<div class='cards'>"
+    html += "</div>"
 
-        for item in itens_filtrados:
-
-            produto = item.get("Produto", "")
-            ordem = item.get("Ordem", "")
-            status_original = item.get("Status", "")
-            status = limpar_status(status_original)
-
-            qtde_total = item.get("Qtde Total", "0")
-            qtde_pendente = item.get("Qtde Pendente", "0")
-            nova_data = str(item.get("Nova Data", "")).strip()
-
-            total = to_float(qtde_total)
-            pendente = to_float(qtde_pendente)
-
-            status_lower = status.lower()
-
-            if "liberada" in status_lower:
-                classe = "liberada"
-            elif nova_data:
-                classe = "reprogramado"
-            elif pendente == 0:
-                classe = "finalizado"
-            elif pendente < total:
-                classe = "producao"
-            else:
-                classe = "pendente"
-
-            card_id = f"card_{ordem}_{data}".replace(" ", "").replace("/", "")
-
-            bloco += f"""
-            <div id="{card_id}" class='card {classe}'>
-
-            <b style="font-size:16px;">{produto}</b><br><br>
-
-            <b>Ordem:</b> {ordem}<br>
-            <b>Turno:</b> {item.get("Turno","-")}<br>
-            <b>Qtde:</b> {qtde_total}<br>
-            <b>Pendente:</b> {qtde_pendente}<br>
-            <b>Status:</b> {status_original}<br>
-
-            {"<b>Ensacado:</b> " + item.get("Ensacado","") + "<br>" if item.get("Ensacado") else ""}
-            {"<b>Nova Data:</b> " + nova_data + "<br>" if nova_data else ""}
-
-            <br>
-
-            <button onclick="exportarCard('{card_id}')" 
-            style="margin-top:8px;padding:6px 10px;border:none;border-radius:6px;background:#34495e;color:white;">
-            📄 Gerar PDF
-            </button>
-
-            </div>
-            """
-
-        bloco += "</div>"
-
-    bloco += "</div>"
-
-    if tem_linha:
-        html += bloco
-
-html += "</div></body></html>"
+html += "</body></html>"
 
 st.components.v1.html(html, height=900, scrolling=True)
