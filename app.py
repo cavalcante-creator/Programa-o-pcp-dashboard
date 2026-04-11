@@ -85,6 +85,12 @@ def limpar_status(s):
     if "LIBERADA" in s: return "LIBERADA"
     return s
 
+def to_float(valor):
+    try:
+        return float(str(valor).replace(".", "").replace(",", "."))
+    except:
+        return 0
+
 # 🔧 ORGANIZAÇÃO
 estrutura = {}
 
@@ -130,12 +136,45 @@ if colb1.button("Hoje"):
 mostrar_todas = colb2.checkbox("Mostrar todas as datas", value=True)
 data_sel = data_input.strftime("%d/%m/%Y")
 
-# 🔥 HTML + PDF
+# 🔥 HTML (MANTENDO VISUAL ORIGINAL)
 html = """
 <html>
 <head>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+body { font-family: 'Segoe UI'; background: #f5f7fa; margin: 20px; }
+
+.linha h2 { background: #2c3e50; color: white; padding: 10px; border-radius: 8px; }
+
+.cards { display: flex; flex-wrap: wrap; }
+
+.card {
+    width: 260px;
+    padding: 12px;
+    margin: 8px;
+    border-radius: 12px;
+    background: white;
+    box-shadow: 0px 4px 12px rgba(0,0,0,0.06);
+    border-left: 5px solid transparent;
+}
+
+.producao { border-left: 5px solid #a9cce3; background: #f4f9fd; }
+.pendente { border-left: 5px solid #f5b7b1; background: #fdf2f2; }
+.finalizado { border-left: 5px solid #a9dfbf; background: #f3fbf6; }
+.reprogramado { border-left: 5px solid #d7bde2; background: #f8f4fb; }
+.liberada { border-left: 5px solid #f9e79f; background: #fef9e7; }
+
+button {
+    margin-top:8px;
+    padding:6px 10px;
+    border:none;
+    border-radius:6px;
+    background:#2c3e50;
+    color:white;
+}
+</style>
 
 <script>
 function exportarCard(produto, ordem, turno, qtde, pendente, status, data, linha){
@@ -206,30 +245,6 @@ function exportarCard(produto, ordem, turno, qtde, pendente, status, data, linha
         y += altura;
     }
 
-    y += 10;
-
-    pdf.rect(10, y, 190, 50);
-
-    pdf.setFont("helvetica","bold");
-    pdf.setFontSize(12);
-    pdf.text(produto.toUpperCase(), 15, y + 12);
-
-    pdf.setFontSize(11);
-    pdf.text("ORDEM: " + ordem, 15, y + 22);
-
-    pdf.setFontSize(30);
-    pdf.text(qtde, 145, y + 35);
-
-    y += 60;
-
-    pdf.setFontSize(10);
-
-    pdf.line(15, y, 80, y);
-    pdf.text("OPERADOR", 15, y + 5);
-
-    pdf.line(110, y, 180, y);
-    pdf.text("CONFERENTE", 110, y + 5);
-
     pdf.save("ordem_producao.pdf");
 }
 </script>
@@ -244,13 +259,10 @@ for linha, datas in estrutura.items():
     if linha_sel != "Todas" and linha != linha_sel:
         continue
 
-    bloco = f"<div><h2>{linha}</h2>"
+    bloco = f"<div class='linha'><h2>{linha}</h2>"
     tem_linha = False
 
     for data, turnos in datas.items():
-
-        if semanas_sel and get_semana(data) not in semanas_sel:
-            continue
 
         if not mostrar_todas and data != data_sel:
             continue
@@ -270,9 +282,22 @@ for linha, datas in estrutura.items():
                 qtde = item.get("Qtde Total", "0")
                 pendente = item.get("Qtde Pendente", "0")
 
+                total = to_float(qtde)
+                pend = to_float(pendente)
+
+                if "LIBERADA" in status.upper():
+                    classe = "liberada"
+                elif pend == 0:
+                    classe = "finalizado"
+                elif pend < total:
+                    classe = "producao"
+                else:
+                    classe = "pendente"
+
                 conteudo += f"""
-                <div>
-                <b>{produto}</b><br>
+                <div class='card {classe}'>
+                <b>{produto}</b><br><br>
+
                 Ordem: {ordem}<br>
                 Turno: {turno}<br>
                 Qtde: {qtde}<br>
@@ -297,7 +322,7 @@ for linha, datas in estrutura.items():
 
         if conteudo:
             tem_linha = True
-            bloco += f"<h3>{data}</h3>{conteudo}"
+            bloco += f"<h3>📅 {data}</h3><div class='cards'>{conteudo}</div>"
 
     bloco += "</div>"
 
