@@ -137,30 +137,8 @@ html = """
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-<style>
-body { font-family: 'Segoe UI'; background: #f5f7fa; margin: 20px; }
-.linha h2 { background: #2c3e50; color: white; padding: 10px; border-radius: 8px; }
-.cards { display: flex; flex-wrap: wrap; }
-.card {
-    width: 260px;
-    padding: 12px;
-    margin: 8px;
-    border-radius: 12px;
-    background: white;
-    box-shadow: 0px 4px 12px rgba(0,0,0,0.06);
-}
-button {
-    margin-top:8px;
-    padding:6px 10px;
-    border:none;
-    border-radius:6px;
-    background:#34495e;
-    color:white;
-}
-</style>
-
 <script>
-function exportarCard(produto, ordem, turno, qtde, pendente, status){
+function exportarCard(produto, ordem, turno, qtde, pendente, status, data, linha){
 
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF('p','mm','a4');
@@ -171,11 +149,11 @@ function exportarCard(produto, ordem, turno, qtde, pendente, status){
     pdf.setFontSize(16);
     pdf.text("ORDEM DE PRODUÇÃO", 60, y);
 
-    pdf.setFontSize(9);
-    pdf.setFont("helvetica","normal");
-    pdf.text("DATA: " + new Date().toLocaleDateString(), 150, y);
+    pdf.setFontSize(12);
+    pdf.text("DATA: " + data, 10, y + 8);
+    pdf.text("LINHA: " + linha, 120, y + 8);
 
-    y += 12;
+    y += 18;
 
     function campo(x, y, w, h, titulo, valor) {
         pdf.setFont("helvetica","bold");
@@ -197,8 +175,8 @@ function exportarCard(produto, ordem, turno, qtde, pendente, status){
     y += 16;
 
     campo(10, y, 60, 12, "TURNO", turno);
-    campo(70, y, 60, 12, "QUANTIDADE", qtde);
-    campo(130, y, 70, 12, "PENDENTE", pendente);
+    campo(70, y, 60, 12, "QUANTIDADE PROGRAMADA", qtde);
+    campo(130, y, 70, 12, "QUANTIDADE PENDENTE", pendente);
 
     y += 16;
 
@@ -266,7 +244,7 @@ for linha, datas in estrutura.items():
     if linha_sel != "Todas" and linha != linha_sel:
         continue
 
-    bloco = f"<div class='linha'><h2>{linha}</h2>"
+    bloco = f"<div><h2>{linha}</h2>"
     tem_linha = False
 
     for data, turnos in datas.items():
@@ -293,9 +271,8 @@ for linha, datas in estrutura.items():
                 pendente = item.get("Qtde Pendente", "0")
 
                 conteudo += f"""
-                <div class='card'>
-                <b>{produto}</b><br><br>
-
+                <div>
+                <b>{produto}</b><br>
                 Ordem: {ordem}<br>
                 Turno: {turno}<br>
                 Qtde: {qtde}<br>
@@ -308,7 +285,9 @@ for linha, datas in estrutura.items():
                     '{turno}',
                     '{qtde}',
                     '{pendente}',
-                    '{status}'
+                    '{status}',
+                    '{data}',
+                    '{linha}'
                 )">
                 📄 Gerar PDF
                 </button>
@@ -318,7 +297,7 @@ for linha, datas in estrutura.items():
 
         if conteudo:
             tem_linha = True
-            bloco += f"<h3>📅 {data}</h3><div class='cards'>{conteudo}</div>"
+            bloco += f"<h3>{data}</h3>{conteudo}"
 
     bloco += "</div>"
 
