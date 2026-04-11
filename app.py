@@ -139,14 +139,11 @@ data_sel = data_input.strftime("%d/%m/%Y")
 html = """
 <html>
 <head>
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <style>
 body { font-family: 'Segoe UI'; background: #f5f7fa; margin: 20px; }
-
 .linha h2 { background: #2c3e50; color: white; padding: 10px; border-radius: 8px; }
-
 .cards { display: flex; flex-wrap: wrap; }
 
 .card {
@@ -211,12 +208,10 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
 
     y += 20;
 
-    // 🔥 FAIXA MAIS FINA
     pdf.setFillColor(44,62,80);
     pdf.rect(10, y, 190, 8, 'F');
 
     pdf.setTextColor(255,255,255);
-    pdf.setFontSize(12);
     pdf.text("DATA: " + data, 15, y + 5.5);
     pdf.text("LINHA: " + linha, 120, y + 5.5);
 
@@ -231,7 +226,6 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
         pdf.rect(x,y,w,h);
         pdf.setFont("helvetica","normal");
         pdf.setFontSize(10);
-
         let linhas = pdf.splitTextToSize(v, w - 4);
         pdf.text(linhas, x+2, y+6);
     }
@@ -283,7 +277,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
 <body>
 """
 
-# LOOP (mantido igual)
+# 🔄 LOOP (COM CORES RESTAURADAS)
 for linha, datas in estrutura.items():
 
     if linha_sel != "Todas" and linha != linha_sel:
@@ -309,15 +303,11 @@ for linha, datas in estrutura.items():
                 ordem = item.get("Ordem", "")
                 produto = item.get("Produto", "")
                 status_original = item.get("Status", "")
-                status = limpar_status(status_original)
 
                 if ordem_pesquisa and ordem_pesquisa not in ordem:
                     continue
 
                 if produto_pesquisa and produto_pesquisa.lower() not in produto.lower():
-                    continue
-
-                if status_sel != "Todos" and status != status_sel:
                     continue
 
                 itens_filtrados.append(item)
@@ -337,8 +327,21 @@ for linha, datas in estrutura.items():
             qtde_total = item.get("Qtde Total", "0")
             qtde_pendente = item.get("Qtde Pendente", "0")
 
+            total = to_float(qtde_total)
+            pendente = to_float(qtde_pendente)
+            status_lower = status_original.lower()
+
+            if "liberada" in status_lower:
+                classe = "liberada"
+            elif pendente == 0:
+                classe = "finalizado"
+            elif pendente < total:
+                classe = "producao"
+            else:
+                classe = "pendente"
+
             bloco += f"""
-            <div class='card'>
+            <div class='card {classe}'>
             <b>{produto}</b><br>
             Ordem: {ordem}<br>
             Turno: {item.get("Turno","-")}<br>
