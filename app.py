@@ -175,12 +175,6 @@ button {
 <script>
 async function exportarCard(produto, ordem, turno, qtde, pendente, status, data, linha){
 
-    let operador = prompt("Digite o nome do operador:");
-
-    if (!operador){
-        operador = "Não informado";
-    }
-
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF('p','mm','a4');
 
