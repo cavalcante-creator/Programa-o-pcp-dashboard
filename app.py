@@ -142,7 +142,7 @@ if colb1.button("Hoje"):
 mostrar_todas = colb2.checkbox("Mostrar todas as datas", value=True)
 data_sel = data_input.strftime("%d/%m/%Y")
 
-# 🔥 HTML ORIGINAL + PDF
+# 🔥 HTML + PDF
 html = """
 <html>
 <head>
@@ -183,22 +183,52 @@ button {
 </style>
 
 <script>
-function exportarCard(produto, ordem, turno, qtde, pendente, status, data, linha){
+async function exportarCard(produto, ordem, turno, qtde, pendente, status, data, linha){
 
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF('p','mm','a4');
 
-    let y = 15;
+    let y = 10;
+
+    // 🖼️ LOGO
+    const logoUrl = "https://raw.githubusercontent.com/cavalcante-creator/Programa-o-pcp-dashboard/main/COL_LOGO_8.png";
+
+    try {
+        const img = await fetch(logoUrl);
+        const blob = await img.blob();
+
+        const reader = new FileReader();
+        await new Promise(resolve => {
+            reader.onloadend = resolve;
+            reader.readAsDataURL(blob);
+        });
+
+        const base64 = reader.result;
+
+        pdf.addImage(base64, 'PNG', 10, y, 40, 15);
+
+    } catch(e){
+        console.log("Erro logo");
+    }
 
     pdf.setFont("helvetica","bold");
     pdf.setFontSize(16);
-    pdf.text("ORDEM DE PRODUÇÃO", 60, y);
+    pdf.text("ORDEM DE PRODUÇÃO", 70, y + 10);
 
+    y += 20;
+
+    // 🔥 FAIXA DE DESTAQUE
+    pdf.setFillColor(44, 62, 80);
+    pdf.rect(10, y, 190, 12, 'F');
+
+    pdf.setTextColor(255,255,255);
     pdf.setFontSize(12);
-    pdf.text("DATA: " + data, 10, y + 8);
+    pdf.text("DATA: " + data, 15, y + 8);
     pdf.text("LINHA: " + linha, 120, y + 8);
 
-    y += 18;
+    pdf.setTextColor(0,0,0);
+
+    y += 20;
 
     function campo(x, y, w, h, titulo, valor) {
         pdf.setFont("helvetica","bold");
@@ -259,7 +289,7 @@ function exportarCard(produto, ordem, turno, qtde, pendente, status, data, linha
 <body>
 """
 
-# 🔄 LOOP ORIGINAL (MANTIDO)
+# 🔄 LOOP ORIGINAL
 for linha, datas in estrutura.items():
 
     if linha_sel != "Todas" and linha != linha_sel:
