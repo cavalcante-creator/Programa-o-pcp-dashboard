@@ -10,7 +10,7 @@ import os
 st_autorefresh(interval=60000)
 st.set_page_config(layout="wide")
 
-# 📁 CRIAR PASTA RANCHOS
+# 📁 criar pasta ranchos
 if not os.path.exists("ranchos"):
     os.makedirs("ranchos")
 
@@ -141,7 +141,7 @@ mostrar_todas = colb2.checkbox("Mostrar todas as datas", value=True)
 data_sel = data_input.strftime("%d/%m/%Y")
 
 # =========================
-# 🔥 UPLOAD REAL DOS RANCHOS (NOVO)
+# 📎 UPLOAD REAL DOS RANCHOS
 # =========================
 st.markdown("## 📎 Upload de Ranchos")
 
@@ -161,7 +161,7 @@ for ordem in ordens_unicas:
 
         st.success(f"✅ Rancho salvo para ordem {ordem}")
 
-# 🔥 HTML + PDF (SEU ORIGINAL INTACTO)
+# 🔥 HTML + PDF (SEU ORIGINAL)
 html = """
 <html>
 <head>
@@ -199,12 +199,17 @@ button {
 </style>
 
 <script>
-// mantém seu JS original (PDF + rancho visual)
-async function exportarCard(...) {}
+async function exportarCard(produto, ordem, turno, qtde, pendente, status, data, linha){
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p','mm','a4');
+    pdf.text("ORDEM DE PRODUÇÃO", 20, 20);
+    pdf.save("ordem_producao.pdf");
+}
+
 function anexarRancho(input, ordem){
     const file = input.files[0];
     if(file){
-        alert("PDF do rancho anexado para a ordem: " + ordem);
+        alert("⚠️ Use o upload acima para salvar o rancho.");
     }
 }
 </script>
@@ -213,7 +218,7 @@ function anexarRancho(input, ordem){
 <body>
 """
 
-# 🔁 SEU LOOP ORIGINAL (INALTERADO)
+# 🔄 LOOP ORIGINAL
 for linha, datas in estrutura.items():
 
     if linha_sel != "Todas" and linha != linha_sel:
@@ -284,7 +289,16 @@ for linha, datas in estrutura.items():
             Pendente: {qtde_pendente}<br>
             Status: {status_original}<br>
 
-            <button onclick="exportarCard(...)">
+            <button onclick="exportarCard(
+                '{produto}',
+                '{ordem}',
+                '{item.get("Turno","-")}',
+                '{qtde_total}',
+                '{qtde_pendente}',
+                '{status_original}',
+                '{data}',
+                '{linha}'
+            )">
             📄 Gerar PDF
             </button>
 
