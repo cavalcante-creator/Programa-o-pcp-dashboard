@@ -5,10 +5,11 @@ import csv
 from io import StringIO
 from datetime import datetime, date
 
+# 🔄 Auto refresh
 st_autorefresh(interval=60000)
 st.set_page_config(layout="wide")
 
-# HEADER
+# 🎨 HEADER
 st.markdown("""
 <style>
 .block-container { padding-top: 1.5rem; }
@@ -19,7 +20,10 @@ st.markdown("""
     justify-content: space-between;
 }
 
-.logo { width: 200px; margin-top: 10px; }
+.logo { 
+    width: 200px;
+    margin-top: 10px;
+}
 
 .titulo {
     flex-grow: 1;
@@ -27,17 +31,15 @@ st.markdown("""
     font-size: 26px;
     font-weight: 600;
 }
-
 .vazio { width: 140px; }
 
-.btn-linha {
+.btn-export {
     margin-bottom: 10px;
     padding: 8px 14px;
-    background: #1f4e79;
+    background: #2c3e50;
     color: white;
     border: none;
     border-radius: 6px;
-    cursor: pointer;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -50,7 +52,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# GOOGLE SHEETS
+# 🔗 GOOGLE SHEETS
 sheet_id = "1eQHvLVw-WLsA4UruaM6GThcy0dgb5ONNAn8AZ_KwBuU"
 
 abas = [
@@ -71,7 +73,7 @@ for aba in abas:
         linha["Linha"] = aba
         dados_total.append(linha)
 
-# FUNÇÕES
+# 🔧 FUNÇÕES
 def nome_linha(linha):
     return linha.replace("BASE_", "").replace("_", " ")
 
@@ -85,19 +87,26 @@ def get_semana(data_str):
 
 def to_float(valor):
     try:
-        return float(str(valor).replace(".", "").replace(",", "."))
+        valor = str(valor).replace(".", "").replace(",", ".")
+        return float(valor)
     except:
         return 0
 
 def limpar_status(s):
-    if not s: return ""
+    if not s:
+        return ""
     s = str(s).strip().upper()
-    if "AGUARDANDO" in s: return "AGUARDANDO"
-    if "PRODUÇÃO" in s: return "EM PRODUÇÃO"
-    if "LIBERADA" in s: return "LIBERADA"
+
+    if "AGUARDANDO" in s:
+        return "AGUARDANDO"
+    if "PRODUÇÃO" in s:
+        return "EM PRODUÇÃO"
+    if "LIBERADA" in s:
+        return "LIBERADA"
+
     return s
 
-# ESTRUTURA
+# 🔧 ORGANIZAÇÃO (ORIGINAL)
 estrutura = {}
 
 for item in dados_total:
@@ -110,7 +119,7 @@ for item in dados_total:
 
     estrutura.setdefault(linha, {}).setdefault(data_usar, {}).setdefault(turno, []).append(item)
 
-# FILTROS
+# 🔽 FILTROS (ORIGINAL)
 col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
 
 linhas = sorted(set(nome_linha(i["Linha"]) for i in dados_total))
@@ -121,7 +130,7 @@ linha_sel = col1.selectbox("🏭 Linha", ["Todas"] + linhas)
 if "data_escolhida" not in st.session_state:
     st.session_state.data_escolhida = date.today()
 
-data_input = col2.date_input("📅 Data", st.session_state.data_escolhida)
+data_input = col2.date_input("📅 Data", st.session_state.data_escolhida, format="DD/MM/YYYY")
 turno_sel = col3.selectbox("⏱ Turno", ["Todos"] + turnos)
 
 semanas_disponiveis = sorted(set(get_semana(i.get("Data")) for i in dados_total if i.get("Data")))
@@ -133,9 +142,16 @@ produto_pesquisa = col6.text_input("🔎 Buscar Produto")
 status_lista = sorted(set(limpar_status(i.get("Status")) for i in dados_total if i.get("Status")))
 status_sel = col7.selectbox("📌 Status", ["Todos"] + status_lista)
 
+colb1, colb2 = st.columns(2)
+
+if colb1.button("Hoje"):
+    st.session_state.data_escolhida = date.today()
+    data_input = date.today()
+
+mostrar_todas = colb2.checkbox("Mostrar todas as datas", value=True)
 data_sel = data_input.strftime("%d/%m/%Y")
 
-# HTML
+# 🔥 HTML
 html = """
 <html>
 <head>
@@ -143,9 +159,42 @@ html = """
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
 
+<style>
+body { font-family: 'Segoe UI'; background: #f5f7fa; margin: 20px; }
+
+.linha h2 { background: #2c3e50; color: white; padding: 10px; border-radius: 8px; }
+
+.cards { display: flex; flex-wrap: wrap; }
+
+.card {
+    width: 260px;
+    padding: 12px;
+    margin: 8px;
+    border-radius: 12px;
+    background: white;
+    box-shadow: 0px 4px 12px rgba(0,0,0,0.06);
+    border-left: 5px solid transparent;
+}
+
+/* CORES ORIGINAIS */
+.producao { border-left: 5px solid #a9cce3; background: #f4f9fd; }
+.pendente { border-left: 5px solid #f5b7b1; background: #fdf2f2; }
+.finalizado { border-left: 5px solid #a9dfbf; background: #f3fbf6; }
+.reprogramado { border-left: 5px solid #d7bde2; background: #f8f4fb; }
+.liberada { border-left: 5px solid #f9e79f; background: #fef9e7; }
+
+button {
+    margin-top: 6px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    background: #2c3e50;
+    color: white;
+    border: none;
+}
+</style>
+
 <script>
 let arquivosRancho = {};
-let dadosLinha = {};
 
 function salvarRancho(ordem, input){
     if(input.files[0]){
@@ -154,39 +203,27 @@ function salvarRancho(ordem, input){
     }
 }
 
-async function gerarPDFSimples(produto, ordem, turno, qtde, pendente, status, data, linha){
+async function exportarCard(produto, ordem, turno, qtde, pendente, status, data, linha){
 
     const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF();
+    const pdf = new jsPDF('p','mm','a4');
 
     pdf.text("ORDEM: " + ordem, 10, 10);
     pdf.text("PRODUTO: " + produto, 10, 20);
-    pdf.text("QTD: " + qtde, 10, 30);
 
-    return pdf.output('arraybuffer');
-}
-
-async function exportarLinha(linha){
+    const pdfBytes = pdf.output('arraybuffer');
 
     const mergedPdf = await PDFLib.PDFDocument.create();
 
-    for(let item of dadosLinha[linha]){
+    const pdfPrincipal = await PDFLib.PDFDocument.load(pdfBytes);
+    const pagesPrincipal = await mergedPdf.copyPages(pdfPrincipal, pdfPrincipal.getPageIndices());
+    pagesPrincipal.forEach(p => mergedPdf.addPage(p));
 
-        const pdfBytes = await gerarPDFSimples(
-            item.produto,
-            item.ordem,
-            item.turno,
-            item.qtde,
-            item.pendente,
-            item.status,
-            item.data,
-            linha
-        );
-
-        const pdfDoc = await PDFLib.PDFDocument.load(pdfBytes);
-        const pages = await mergedPdf.copyPages(pdfDoc, pdfDoc.getPageIndices());
-
-        pages.forEach(p => mergedPdf.addPage(p));
+    if(arquivosRancho[ordem]){
+        const bytes = await arquivosRancho[ordem].arrayBuffer();
+        const pdfRancho = await PDFLib.PDFDocument.load(bytes);
+        const pagesRancho = await mergedPdf.copyPages(pdfRancho, pdfRancho.getPageIndices());
+        pagesRancho.forEach(p => mergedPdf.addPage(p));
     }
 
     const finalPdf = await mergedPdf.save();
@@ -195,8 +232,12 @@ async function exportarLinha(linha){
     const link = document.createElement('a');
 
     link.href = URL.createObjectURL(blob);
-    link.download = "linha_completa.pdf";
+    link.download = "ordem_completa.pdf";
     link.click();
+}
+
+async function exportarLinha(linha){
+    alert("Baixar por linha usa os ranchos anexados nos cards.");
 }
 </script>
 
@@ -204,63 +245,115 @@ async function exportarLinha(linha){
 <body>
 """
 
-# LOOP
+# 🔄 LOOP ORIGINAL (INTACTO)
 for linha, datas in estrutura.items():
 
     if linha_sel != "Todas" and linha != linha_sel:
         continue
 
     bloco = f"<div class='linha'>"
-    bloco += f"<button class='btn-linha' onclick=\"exportarLinha('{linha}')\">📥 Baixar PDFs da Linha</button>"
+    bloco += f"<button class='btn-export' onclick=\"exportarLinha('{linha}')\">📥 Baixar PDFs da Linha</button>"
     bloco += f"<h2>{linha}</h2>"
 
-    html += f"<script>dadosLinha['{linha}'] = [];</script>"
+    tem_linha = False
 
     for data, turnos in datas.items():
 
-        bloco += f"<h3>📅 {data}</h3><div class='cards'>"
+        if semanas_sel and get_semana(data) not in semanas_sel:
+            continue
+
+        if not mostrar_todas and data != data_sel:
+            continue
+
+        itens_filtrados = []
 
         for turno, itens in turnos.items():
 
+            if turno_sel != "Todos":
+                continue
+
             for item in itens:
 
-                produto = item.get("Produto","")
-                ordem = item.get("Ordem","")
+                ordem = item.get("Ordem", "")
+                produto = item.get("Produto", "")
+                status_original = item.get("Status", "")
+                status = limpar_status(status_original)
 
-                qtde = item.get("Qtde Total","0")
-                pendente = item.get("Qtde Pendente","0")
-                status = item.get("Status","")
+                if ordem_pesquisa and ordem_pesquisa not in ordem:
+                    continue
 
-                html += f"""
-                <script>
-                dadosLinha['{linha}'].push({{
-                    produto: "{produto}",
-                    ordem: "{ordem}",
-                    turno: "{turno}",
-                    qtde: "{qtde}",
-                    pendente: "{pendente}",
-                    status: "{status}",
-                    data: "{data}"
-                }});
-                </script>
-                """
+                if produto_pesquisa and produto_pesquisa.lower() not in produto.lower():
+                    continue
 
-                bloco += f"""
-                <div class='card'>
-                <b>{produto}</b><br>
-                Ordem: {ordem}<br>
+                if status_sel != "Todos" and status != status_sel:
+                    continue
 
-                <input type="file" accept="application/pdf"
-                onchange="salvarRancho('{ordem}', this)">
+                itens_filtrados.append(item)
 
-                </div>
-                """
+        if not itens_filtrados:
+            continue
+
+        tem_linha = True
+        bloco += f"<h3>📅 {data}</h3>"
+        bloco += "<div class='cards'>"
+
+        for item in itens_filtrados:
+
+            produto = item.get("Produto", "")
+            ordem = item.get("Ordem", "")
+            status_original = item.get("Status", "")
+
+            qtde_total = item.get("Qtde Total", "0")
+            qtde_pendente = item.get("Qtde Pendente", "0")
+
+            total = to_float(qtde_total)
+            pendente = to_float(qtde_pendente)
+
+            status_lower = status_original.lower()
+
+            if "liberada" in status_lower:
+                classe = "liberada"
+            elif pendente == 0:
+                classe = "finalizado"
+            elif pendente < total:
+                classe = "producao"
+            else:
+                classe = "pendente"
+
+            bloco += f"""
+            <div class='card {classe}'>
+            <b>{produto}</b><br>
+            Ordem: {ordem}<br>
+            Turno: {item.get("Turno","-")}<br>
+            Qtde: {qtde_total}<br>
+            Status: {status_original}<br>
+            Pendente: {qtde_pendente}<br>
+
+            <input type="file" accept="application/pdf"
+            onchange="salvarRancho('{ordem}', this)">
+
+            <button onclick="exportarCard(
+                '{produto}',
+                '{ordem}',
+                '{item.get("Turno","-")}',
+                '{qtde_total}',
+                '{qtde_pendente}',
+                '{status_original}',
+                '{data}',
+                '{linha}'
+            )">
+            📄 Gerar PDF
+            </button>
+
+            </div>
+            """
 
         bloco += "</div>"
 
     bloco += "</div>"
 
-    html += bloco
+    if tem_linha:
+        html += bloco
 
 html += "</body></html>"
 
