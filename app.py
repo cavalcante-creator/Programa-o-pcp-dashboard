@@ -5,11 +5,10 @@ import csv
 from io import StringIO
 from datetime import datetime, date
 
-# 🔄 Auto refresh
 st_autorefresh(interval=60000)
 st.set_page_config(layout="wide")
 
-# 🎨 HEADER
+# HEADER
 st.markdown("""
 <style>
 .block-container { padding-top: 1.5rem; }
@@ -20,10 +19,7 @@ st.markdown("""
     justify-content: space-between;
 }
 
-.logo { 
-    width: 200px;
-    margin-top: 10px;
-}
+.logo { width: 200px; margin-top: 10px; }
 
 .titulo {
     flex-grow: 1;
@@ -31,6 +27,7 @@ st.markdown("""
     font-size: 26px;
     font-weight: 600;
 }
+
 .vazio { width: 140px; }
 
 .btn-export {
@@ -52,7 +49,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# 🔗 GOOGLE SHEETS
+# GOOGLE SHEETS
 sheet_id = "1eQHvLVw-WLsA4UruaM6GThcy0dgb5ONNAn8AZ_KwBuU"
 
 abas = [
@@ -73,7 +70,7 @@ for aba in abas:
         linha["Linha"] = aba
         dados_total.append(linha)
 
-# 🔧 FUNÇÕES
+# FUNÇÕES
 def nome_linha(linha):
     return linha.replace("BASE_", "").replace("_", " ")
 
@@ -87,26 +84,19 @@ def get_semana(data_str):
 
 def to_float(valor):
     try:
-        valor = str(valor).replace(".", "").replace(",", ".")
-        return float(valor)
+        return float(str(valor).replace(".", "").replace(",", "."))
     except:
         return 0
 
 def limpar_status(s):
-    if not s:
-        return ""
+    if not s: return ""
     s = str(s).strip().upper()
-
-    if "AGUARDANDO" in s:
-        return "AGUARDANDO"
-    if "PRODUÇÃO" in s:
-        return "EM PRODUÇÃO"
-    if "LIBERADA" in s:
-        return "LIBERADA"
-
+    if "AGUARDANDO" in s: return "AGUARDANDO"
+    if "PRODUÇÃO" in s: return "EM PRODUÇÃO"
+    if "LIBERADA" in s: return "LIBERADA"
     return s
 
-# 🔧 ORGANIZAÇÃO
+# ESTRUTURA
 estrutura = {}
 
 for item in dados_total:
@@ -119,7 +109,7 @@ for item in dados_total:
 
     estrutura.setdefault(linha, {}).setdefault(data_usar, {}).setdefault(turno, []).append(item)
 
-# 🔽 FILTROS
+# FILTROS
 col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
 
 linhas = sorted(set(nome_linha(i["Linha"]) for i in dados_total))
@@ -130,7 +120,7 @@ linha_sel = col1.selectbox("🏭 Linha", ["Todas"] + linhas)
 if "data_escolhida" not in st.session_state:
     st.session_state.data_escolhida = date.today()
 
-data_input = col2.date_input("📅 Data", st.session_state.data_escolhida, format="DD/MM/YYYY")
+data_input = col2.date_input("📅 Data", st.session_state.data_escolhida)
 turno_sel = col3.selectbox("⏱ Turno", ["Todos"] + turnos)
 
 semanas_disponiveis = sorted(set(get_semana(i.get("Data")) for i in dados_total if i.get("Data")))
@@ -151,7 +141,7 @@ if colb1.button("Hoje"):
 mostrar_todas = colb2.checkbox("Mostrar todas as datas", value=True)
 data_sel = data_input.strftime("%d/%m/%Y")
 
-# 🔥 HTML
+# HTML
 html = """
 <html>
 <head>
@@ -205,7 +195,7 @@ function salvarRancho(ordem, input){
 async function exportarCard(produto, ordem, turno, qtde, pendente, status, data, linha){
 
     const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF('p','mm','a4');
+    const pdf = new jsPDF();
 
     pdf.text("ORDEM: " + ordem, 10, 10);
     pdf.text("PRODUTO: " + produto, 10, 20);
@@ -235,8 +225,48 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     link.click();
 }
 
-function exportarLinha(linha){
-    alert("Baixar por linha disponível com PDFs individuais.");
+async function exportarLinha(){
+
+    const mergedPdf = await PDFLib.PDFDocument.create();
+    const cards = document.querySelectorAll(".card");
+
+    for(let card of cards){
+
+        const ordemMatch = card.innerText.match(/Ordem:\\s*(.*)/);
+        const produtoMatch = card.innerText.split("\\n")[0];
+
+        if(!ordemMatch) continue;
+
+        const ordem = ordemMatch[1];
+
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF();
+
+        pdf.text("ORDEM: " + ordem, 10, 10);
+        pdf.text("PRODUTO: " + produtoMatch, 10, 20);
+
+        const pdfBytes = pdf.output('arraybuffer');
+
+        const pdfPrincipal = await PDFLib.PDFDocument.load(pdfBytes);
+        const pages = await mergedPdf.copyPages(pdfPrincipal, pdfPrincipal.getPageIndices());
+        pages.forEach(p => mergedPdf.addPage(p));
+
+        if(arquivosRancho[ordem]){
+            const bytes = await arquivosRancho[ordem].arrayBuffer();
+            const pdfRancho = await PDFLib.PDFDocument.load(bytes);
+            const pagesRancho = await mergedPdf.copyPages(pdfRancho, pdfRancho.getPageIndices());
+            pagesRancho.forEach(p => mergedPdf.addPage(p));
+        }
+    }
+
+    const finalPdf = await mergedPdf.save();
+
+    const blob = new Blob([finalPdf], { type: 'application/pdf' });
+    const link = document.createElement('a');
+
+    link.href = URL.createObjectURL(blob);
+    link.download = "linha_completa.pdf";
+    link.click();
 }
 </script>
 
@@ -244,14 +274,14 @@ function exportarLinha(linha){
 <body>
 """
 
-# 🔄 LOOP ORIGINAL
+# LOOP ORIGINAL
 for linha, datas in estrutura.items():
 
     if linha_sel != "Todas" and linha != linha_sel:
         continue
 
     bloco = f"<div class='linha'>"
-    bloco += f"<button class='btn-export' onclick=\"exportarLinha('{linha}')\">📥 Baixar PDFs da Linha</button>"
+    bloco += f"<button class='btn-export' onclick=\"exportarLinha()\">📥 Baixar PDFs da Linha</button>"
     bloco += f"<h2>{linha}</h2>"
 
     tem_linha = False
@@ -276,15 +306,11 @@ for linha, datas in estrutura.items():
                 ordem = item.get("Ordem", "")
                 produto = item.get("Produto", "")
                 status_original = item.get("Status", "")
-                status = limpar_status(status_original)
 
                 if ordem_pesquisa and ordem_pesquisa not in ordem:
                     continue
 
                 if produto_pesquisa and produto_pesquisa.lower() not in produto.lower():
-                    continue
-
-                if status_sel != "Todos" and status != status_sel:
                     continue
 
                 itens_filtrados.append(item)
@@ -305,22 +331,8 @@ for linha, datas in estrutura.items():
             qtde_total = item.get("Qtde Total", "0")
             qtde_pendente = item.get("Qtde Pendente", "0")
 
-            total = to_float(qtde_total)
-            pendente = to_float(qtde_pendente)
-
-            status_lower = status_original.lower()
-
-            if "liberada" in status_lower:
-                classe = "liberada"
-            elif pendente == 0:
-                classe = "finalizado"
-            elif pendente < total:
-                classe = "producao"
-            else:
-                classe = "pendente"
-
             bloco += f"""
-            <div class='card {classe}'>
+            <div class='card'>
             <b>{produto}</b><br>
             Ordem: {ordem}<br>
             Turno: {item.get("Turno","-")}<br>
