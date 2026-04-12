@@ -4,6 +4,7 @@ import requests
 import csv
 from io import StringIO
 from datetime import datetime, date
+import json
 
 # 🔄 Auto refresh
 st_autorefresh(interval=60000)
@@ -166,124 +167,64 @@ button {
 </style>
 
 <script>
+
 async function exportarPagina(){
     const { jsPDF } = window.jspdf;
-
     const elemento = document.getElementById("conteudo");
-
     const canvas = await html2canvas(elemento, { scale: 2 });
     const imgData = canvas.toDataURL("image/png");
-
     const pdf = new jsPDF('p','mm','a4');
-
     const largura = 210;
     const altura = (canvas.height * largura) / canvas.width;
-
     pdf.addImage(imgData, 'PNG', 0, 0, largura, altura);
     pdf.save("pagina_completa.pdf");
 }
 
-// 🔹 SUA FUNÇÃO ORIGINAL (mantida)
+// 🔹 FUNÇÃO ORIGINAL
 async function exportarCard(produto, ordem, turno, qtde, pendente, status, data, linha){
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF('p','mm','a4');
 
     let y = 10;
 
-    const logoUrl = "https://raw.githubusercontent.com/cavalcante-creator/Programa-o-pcp-dashboard/main/COL_LOGO_8.png";
-
-    try {
-        const img = await fetch(logoUrl);
-        const blob = await img.blob();
-        const reader = new FileReader();
-
-        await new Promise(resolve => {
-            reader.onloadend = resolve;
-            reader.readAsDataURL(blob);
-        });
-
-        const base64 = reader.result;
-        const props = pdf.getImageProperties(base64);
-
-        const largura = 30;
-        const altura = (props.height * largura) / props.width;
-
-        pdf.addImage(base64, 'PNG', 10, y, largura, altura);
-    } catch(e){}
-
-    pdf.setFont("helvetica","bold");
-    pdf.setFontSize(16);
-    pdf.text("ORDEM DE PRODUÇÃO", 70, y + 10);
-
+    pdf.text("ORDEM DE PRODUÇÃO", 70, y+10);
     y += 20;
 
-    pdf.setFillColor(44,62,80);
-    pdf.rect(10, y, 190, 8, 'F');
+    pdf.text("Produto: " + produto, 10, y);
+    y+=10;
+    pdf.text("Ordem: " + ordem, 10, y);
+    y+=10;
+    pdf.text("Turno: " + turno, 10, y);
+    y+=10;
+    pdf.text("Qtde: " + qtde, 10, y);
+    y+=10;
+    pdf.text("Pendente: " + pendente, 10, y);
+    y+=10;
+    pdf.text("Status: " + status, 10, y);
 
-    pdf.setTextColor(255,255,255);
-    pdf.text("DATA: " + data, 15, y + 5.5);
-    pdf.text("LINHA: " + linha, 120, y + 5.5);
-
-    pdf.setTextColor(0,0,0);
-    y += 18;
-
-    function campo(x,y,w,h,t,v){
-        pdf.setFontSize(8);
-        pdf.setFont("helvetica","bold");
-        pdf.text(t,x,y-1);
-
-        pdf.rect(x,y,w,h);
-
-        pdf.setFont("helvetica","normal");
-        pdf.setFontSize(10);
-
-        let linhas = pdf.splitTextToSize(v, w - 4);
-        pdf.text(linhas, x+2, y+6);
-    }
-
-    campo(10,y,120,12,"PRODUTO",produto);
-    campo(130,y,70,12,"ORDEM",ordem);
-    y+=16;
-
-    campo(10,y,60,12,"TURNO",turno);
-    campo(70,y,60,12,"QUANTIDADE PROGRAMADA",qtde);
-    campo(130,y,70,12,"QUANTIDADE PENDENTE",pendente);
-    y+=16;
-
-    campo(10,y,120,12,"STATUS",status);
-    campo(130,y,70,12,"OPERADOR","");
-    y+=16;
-
-    campo(10,y,120,12,"RANCHO","");
-    y+=20;
-
-    let colunas = ["HORA INICIO","HORA FIM","N PALLETS","SACOS (UN)","RASGADOS","PARADAS"];
-    let larguraTabela = 190/colunas.length;
-    let alturaLinha = 8;
-
-    pdf.setFont("helvetica","bold");
-
-    colunas.forEach((c,i)=>{
-        pdf.rect(10+i*larguraTabela,y,larguraTabela,alturaLinha);
-        pdf.text(c,10+i*larguraTabela+1,y+5);
-    });
-
-    pdf.setFont("helvetica","normal");
-    y+=alturaLinha;
-
-    const limite = 285;
-
-    while(y < limite){
-        for(let j=0;j<colunas.length;j++){
-            pdf.rect(10+j*larguraTabela,y,larguraTabela,alturaLinha);
-        }
-        y+=alturaLinha;
-    }
-
-    pdf.save("ordem_producao.pdf");
+    pdf.save("ordem_" + ordem + ".pdf");
 }
 
-// 🔹 SUA FUNÇÃO ORIGINAL (mantida)
+// 🆕 NOVA FUNÇÃO
+async function exportarLinha(cards){
+    for (let i = 0; i < cards.length; i++) {
+        const c = cards[i];
+
+        await exportarCard(
+            c.produto,
+            c.ordem,
+            c.turno,
+            c.qtde,
+            c.pendente,
+            c.status,
+            c.data,
+            c.linha
+        );
+
+        await new Promise(r => setTimeout(r, 400));
+    }
+}
+
 function anexarRancho(input, ordem){
     const file = input.files[0];
     if(file){
@@ -301,7 +242,7 @@ function anexarRancho(input, ordem){
 <div id="conteudo">
 """
 
-# 🔄 SEU LOOP ORIGINAL (mantido)
+# LOOP
 for linha, datas in estrutura.items():
 
     if linha_sel != "Todas" and linha != linha_sel:
@@ -309,6 +250,7 @@ for linha, datas in estrutura.items():
 
     bloco = f"<div class='linha'><h2>{linha}</h2>"
     tem_linha = False
+    lista_cards = []
 
     for data, turnos in datas.items():
 
@@ -348,6 +290,17 @@ for linha, datas in estrutura.items():
             status_original = item.get("Status", "")
             qtde_total = item.get("Qtde Total", "0")
             qtde_pendente = item.get("Qtde Pendente", "0")
+
+            lista_cards.append({
+                "produto": produto,
+                "ordem": ordem,
+                "turno": item.get("Turno","-"),
+                "qtde": qtde_total,
+                "pendente": qtde_pendente,
+                "status": status_original,
+                "data": data,
+                "linha": linha
+            })
 
             total = to_float(qtde_total)
             pendente = to_float(qtde_pendente)
@@ -393,10 +346,18 @@ for linha, datas in estrutura.items():
             """
 
         bloco += "</div>"
-    bloco += "</div>"
 
     if tem_linha:
-        html += bloco
+        bloco += f"""
+        <div style="margin:10px;">
+            <button onclick='exportarLinha({json.dumps(lista_cards)})'>
+                📥 Baixar PDFs da Linha
+            </button>
+        </div>
+        """
+
+    bloco += "</div>"
+    html += bloco
 
 html += "</div></body></html>"
 
