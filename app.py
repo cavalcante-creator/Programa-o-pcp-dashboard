@@ -102,14 +102,8 @@ if "data_escolhida" not in st.session_state:
 data_input = col2.date_input("📅 Data", st.session_state.data_escolhida, format="DD/MM/YYYY")
 turno_sel = col3.selectbox("⏱ Turno", ["Todos"] + turnos)
 
-semanas_disponiveis = sorted(set(get_semana(i.get("Data")) for i in dados_total if i.get("Data")))
-semanas_sel = col4.multiselect("📆 Semanas", semanas_disponiveis)
-
 ordem_pesquisa = col5.text_input("🔎 Buscar Ordem")
 produto_pesquisa = col6.text_input("🔎 Buscar Produto")
-
-status_lista = sorted(set(limpar_status(i.get("Status")) for i in dados_total if i.get("Status")))
-status_sel = col7.selectbox("📌 Status", ["Todos"] + status_lista)
 
 colb1, colb2 = st.columns(2)
 
@@ -166,26 +160,33 @@ button {
 
 <script>
 
-// 🔥 FUNÇÃO ORIGINAL CARD
+// SUA FUNÇÃO ORIGINAL (mantida)
 async function exportarCard(produto, ordem, turno, qtde, pendente, status, data, linha){
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF('p','mm','a4');
 
-    pdf.text("ORDEM DE PRODUÇÃO", 70, 20);
+    let y = 10;
 
-    pdf.text("Produto: " + produto, 10, 40);
-    pdf.text("Ordem: " + ordem, 10, 50);
-    pdf.text("Turno: " + turno, 10, 60);
-    pdf.text("Quantidade: " + qtde, 10, 70);
-    pdf.text("Pendente: " + pendente, 10, 80);
-    pdf.text("Status: " + status, 10, 90);
-    pdf.text("Data: " + data, 10, 100);
-    pdf.text("Linha: " + linha, 10, 110);
+    pdf.text("ORDEM DE PRODUÇÃO", 70, y+10);
+    y += 20;
+
+    pdf.text("Produto: " + produto, 10, y);
+    y += 10;
+    pdf.text("Ordem: " + ordem, 10, y);
+    y += 10;
+    pdf.text("Turno: " + turno, 10, y);
+    y += 10;
+    pdf.text("Qtde: " + qtde, 10, y);
+    y += 10;
+    pdf.text("Pendente: " + pendente, 10, y);
+    y += 10;
+    pdf.text("Status: " + status, 10, y);
+    y += 10;
 
     pdf.save("ordem_" + ordem + ".pdf");
 }
 
-// 🆕 EXPORTAR LINHA
+// NOVO: BAIXAR POR LINHA
 async function exportarLinha(cards){
     for (let i = 0; i < cards.length; i++) {
         const c = cards[i];
@@ -201,11 +202,11 @@ async function exportarLinha(cards){
             c.linha
         );
 
-        await new Promise(r => setTimeout(r, 500));
+        await new Promise(r => setTimeout(r, 400));
     }
 }
 
-// 🔹 RANCHO
+// RANCHO
 function anexarRancho(input, ordem){
     const file = input.files[0];
     if(file){
@@ -218,15 +219,13 @@ function anexarRancho(input, ordem){
 <body>
 """
 
-# 🔄 LOOP
+# LOOP ORIGINAL + ADIÇÃO
 for linha, datas in estrutura.items():
 
     if linha_sel != "Todas" and linha != linha_sel:
         continue
 
     bloco = f"<div class='linha'><h2>{linha}</h2>"
-    tem_linha = False
-
     lista_cards = []
 
     for data, turnos in datas.items():
@@ -234,58 +233,54 @@ for linha, datas in estrutura.items():
         if not mostrar_todas and data != data_sel:
             continue
 
-        itens_filtrados = []
+        bloco += f"<h3>📅 {data}</h3><div class='cards'>"
 
         for turno, itens in turnos.items():
             for item in itens:
-                itens_filtrados.append(item)
 
-        if not itens_filtrados:
-            continue
+                produto = item.get("Produto","")
+                ordem = item.get("Ordem","")
+                qtde_total = item.get("Qtde Total","0")
+                qtde_pendente = item.get("Qtde Pendente","0")
+                status_original = item.get("Status","")
 
-        tem_linha = True
+                lista_cards.append({
+                    "produto": produto,
+                    "ordem": ordem,
+                    "turno": item.get("Turno","-"),
+                    "qtde": qtde_total,
+                    "pendente": qtde_pendente,
+                    "status": status_original,
+                    "data": data,
+                    "linha": linha
+                })
 
-        bloco += f"<h3>📅 {data}</h3>"
+                bloco += f"""
+                <div class='card'>
+                <b>{produto}</b><br>
+                Ordem: {ordem}<br>
 
-        for item in itens_filtrados:
-            produto = item.get("Produto", "")
-            ordem = item.get("Ordem", "")
-            qtde_total = item.get("Qtde Total", "0")
-            qtde_pendente = item.get("Qtde Pendente", "0")
-            status_original = item.get("Status", "")
+                <button onclick="exportarCard('{produto}','{ordem}','{item.get("Turno","-")}','{qtde_total}','{qtde_pendente}','{status_original}','{data}','{linha}')">
+                📄 PDF
+                </button>
 
-            lista_cards.append({
-                "produto": produto,
-                "ordem": ordem,
-                "turno": item.get("Turno","-"),
-                "qtde": qtde_total,
-                "pendente": qtde_pendente,
-                "status": status_original,
-                "data": data,
-                "linha": linha
-            })
+                <input type="file" onchange="anexarRancho(this,'{ordem}')">
+                </div>
+                """
 
-            bloco += f"""
-            <div class='card'>
-            <b>{produto}</b><br>
-            Ordem: {ordem}<br>
-
-            <button onclick="exportarCard('{produto}','{ordem}','{item.get("Turno","-")}','{qtde_total}','{qtde_pendente}','{status_original}','{data}','{linha}')">
-            📄 PDF
-            </button>
-
-            <input type="file" onchange="anexarRancho(this,'{ordem}')">
-            </div>
-            """
-
-    if tem_linha:
-        bloco += f"""
-        <button onclick='exportarLinha({json.dumps(lista_cards)})'>
-        📥 Baixar PDFs da Linha
-        </button>
-        """
         bloco += "</div>"
-        html += bloco
+
+    # BOTÃO DA LINHA
+    bloco += f"""
+    <div style="margin:10px;">
+        <button onclick='exportarLinha({json.dumps(lista_cards)})'>
+            📥 Baixar PDFs da Linha
+        </button>
+    </div>
+    """
+
+    bloco += "</div>"
+    html += bloco
 
 html += "</body></html>"
 
