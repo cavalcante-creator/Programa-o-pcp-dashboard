@@ -169,7 +169,7 @@ button {
 async function exportarPagina(){
     const { jsPDF } = window.jspdf;
 
-    const elemento = document.body;
+    const elemento = document.getElementById("conteudo");
 
     const canvas = await html2canvas(elemento, { scale: 2 });
     const imgData = canvas.toDataURL("image/png");
@@ -191,6 +191,88 @@ async function exportarPagina(){
         📥 Baixar Página Completa
     </button>
 </div>
+
+<div id="conteudo">
 """
 
-# 🔄 (RESTO DO TEU LOOP CONTINUA IGUAL)
+# 🔄 LOOP (SEU ORIGINAL)
+for linha, datas in estrutura.items():
+
+    if linha_sel != "Todas" and linha != linha_sel:
+        continue
+
+    bloco = f"<div class='linha'><h2>{linha}</h2>"
+    tem_linha = False
+
+    for data, turnos in datas.items():
+
+        if not mostrar_todas and data != data_sel:
+            continue
+
+        itens_filtrados = []
+
+        for turno, itens in turnos.items():
+
+            if turno_sel != "Todos":
+                continue
+
+            for item in itens:
+                ordem = item.get("Ordem", "")
+                produto = item.get("Produto", "")
+
+                if ordem_pesquisa and ordem_pesquisa not in ordem:
+                    continue
+
+                if produto_pesquisa and produto_pesquisa.lower() not in produto.lower():
+                    continue
+
+                itens_filtrados.append(item)
+
+        if not itens_filtrados:
+            continue
+
+        tem_linha = True
+
+        bloco += f"<h3>📅 {data}</h3><div class='cards'>"
+
+        for item in itens_filtrados:
+            produto = item.get("Produto", "")
+            ordem = item.get("Ordem", "")
+            status_original = item.get("Status", "")
+            qtde_total = item.get("Qtde Total", "0")
+            qtde_pendente = item.get("Qtde Pendente", "0")
+
+            total = to_float(qtde_total)
+            pendente = to_float(qtde_pendente)
+
+            status_lower = status_original.lower()
+
+            if "liberada" in status_lower:
+                classe = "liberada"
+            elif pendente == 0:
+                classe = "finalizado"
+            elif pendente < total:
+                classe = "producao"
+            else:
+                classe = "pendente"
+
+            bloco += f"""
+            <div class='card {classe}'>
+            <b>{produto}</b><br>
+            Ordem: {ordem}<br>
+            Turno: {item.get("Turno","-")}<br>
+            Qtde: {qtde_total}<br>
+            Pendente: {qtde_pendente}<br>
+            Status: {status_original}<br>
+            </div>
+            """
+
+        bloco += "</div>"
+    bloco += "</div>"
+
+    if tem_linha:
+        html += bloco
+
+html += "</div></body></html>"
+
+st.components.v1.html(html, height=900, scrolling=True)
