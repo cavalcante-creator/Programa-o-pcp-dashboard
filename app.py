@@ -4,6 +4,7 @@ import requests
 import csv
 from io import StringIO
 from datetime import datetime, date
+import json
 
 # 🔄 Auto refresh
 st_autorefresh(interval=60000)
@@ -120,12 +121,11 @@ mostrar_todas = colb2.checkbox("Mostrar todas as datas", value=True)
 
 data_sel = data_input.strftime("%d/%m/%Y")
 
-# 🔥 HTML + PDF
+# 🔥 HTML
 html = """
 <html>
 <head>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <style>
 body { font-family: 'Segoe UI'; background: #f5f7fa; margin: 20px; }
@@ -152,7 +152,6 @@ body { font-family: 'Segoe UI'; background: #f5f7fa; margin: 20px; }
 .producao { border-left: 5px solid #a9cce3; background: #f4f9fd; }
 .pendente { border-left: 5px solid #f5b7b1; background: #fdf2f2; }
 .finalizado { border-left: 5px solid #a9dfbf; background: #f3fbf6; }
-.reprogramado { border-left: 5px solid #d7bde2; background: #f8f4fb; }
 .liberada { border-left: 5px solid #f9e79f; background: #fef9e7; }
 
 button {
@@ -166,142 +165,60 @@ button {
 </style>
 
 <script>
-async function exportarPagina(){
-    const { jsPDF } = window.jspdf;
 
-    const elemento = document.getElementById("conteudo");
-
-    const canvas = await html2canvas(elemento, { scale: 2 });
-    const imgData = canvas.toDataURL("image/png");
-
-    const pdf = new jsPDF('p','mm','a4');
-
-    const largura = 210;
-    const altura = (canvas.height * largura) / canvas.width;
-
-    pdf.addImage(imgData, 'PNG', 0, 0, largura, altura);
-    pdf.save("pagina_completa.pdf");
-}
-
-// 🔹 SUA FUNÇÃO ORIGINAL (mantida)
+// 🔥 FUNÇÃO ORIGINAL CARD
 async function exportarCard(produto, ordem, turno, qtde, pendente, status, data, linha){
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF('p','mm','a4');
 
-    let y = 10;
+    pdf.text("ORDEM DE PRODUÇÃO", 70, 20);
 
-    const logoUrl = "https://raw.githubusercontent.com/cavalcante-creator/Programa-o-pcp-dashboard/main/COL_LOGO_8.png";
+    pdf.text("Produto: " + produto, 10, 40);
+    pdf.text("Ordem: " + ordem, 10, 50);
+    pdf.text("Turno: " + turno, 10, 60);
+    pdf.text("Quantidade: " + qtde, 10, 70);
+    pdf.text("Pendente: " + pendente, 10, 80);
+    pdf.text("Status: " + status, 10, 90);
+    pdf.text("Data: " + data, 10, 100);
+    pdf.text("Linha: " + linha, 10, 110);
 
-    try {
-        const img = await fetch(logoUrl);
-        const blob = await img.blob();
-        const reader = new FileReader();
-
-        await new Promise(resolve => {
-            reader.onloadend = resolve;
-            reader.readAsDataURL(blob);
-        });
-
-        const base64 = reader.result;
-        const props = pdf.getImageProperties(base64);
-
-        const largura = 30;
-        const altura = (props.height * largura) / props.width;
-
-        pdf.addImage(base64, 'PNG', 10, y, largura, altura);
-    } catch(e){}
-
-    pdf.setFont("helvetica","bold");
-    pdf.setFontSize(16);
-    pdf.text("ORDEM DE PRODUÇÃO", 70, y + 10);
-
-    y += 20;
-
-    pdf.setFillColor(44,62,80);
-    pdf.rect(10, y, 190, 8, 'F');
-
-    pdf.setTextColor(255,255,255);
-    pdf.text("DATA: " + data, 15, y + 5.5);
-    pdf.text("LINHA: " + linha, 120, y + 5.5);
-
-    pdf.setTextColor(0,0,0);
-    y += 18;
-
-    function campo(x,y,w,h,t,v){
-        pdf.setFontSize(8);
-        pdf.setFont("helvetica","bold");
-        pdf.text(t,x,y-1);
-
-        pdf.rect(x,y,w,h);
-
-        pdf.setFont("helvetica","normal");
-        pdf.setFontSize(10);
-
-        let linhas = pdf.splitTextToSize(v, w - 4);
-        pdf.text(linhas, x+2, y+6);
-    }
-
-    campo(10,y,120,12,"PRODUTO",produto);
-    campo(130,y,70,12,"ORDEM",ordem);
-    y+=16;
-
-    campo(10,y,60,12,"TURNO",turno);
-    campo(70,y,60,12,"QUANTIDADE PROGRAMADA",qtde);
-    campo(130,y,70,12,"QUANTIDADE PENDENTE",pendente);
-    y+=16;
-
-    campo(10,y,120,12,"STATUS",status);
-    campo(130,y,70,12,"OPERADOR","");
-    y+=16;
-
-    campo(10,y,120,12,"RANCHO","");
-    y+=20;
-
-    let colunas = ["HORA INICIO","HORA FIM","N PALLETS","SACOS (UN)","RASGADOS","PARADAS"];
-    let larguraTabela = 190/colunas.length;
-    let alturaLinha = 8;
-
-    pdf.setFont("helvetica","bold");
-
-    colunas.forEach((c,i)=>{
-        pdf.rect(10+i*larguraTabela,y,larguraTabela,alturaLinha);
-        pdf.text(c,10+i*larguraTabela+1,y+5);
-    });
-
-    pdf.setFont("helvetica","normal");
-    y+=alturaLinha;
-
-    const limite = 285;
-
-    while(y < limite){
-        for(let j=0;j<colunas.length;j++){
-            pdf.rect(10+j*larguraTabela,y,larguraTabela,alturaLinha);
-        }
-        y+=alturaLinha;
-    }
-
-    pdf.save("ordem_producao.pdf");
+    pdf.save("ordem_" + ordem + ".pdf");
 }
 
-// 🔹 SUA FUNÇÃO ORIGINAL (mantida)
+// 🆕 EXPORTAR LINHA
+async function exportarLinha(cards){
+    for (let i = 0; i < cards.length; i++) {
+        const c = cards[i];
+
+        await exportarCard(
+            c.produto,
+            c.ordem,
+            c.turno,
+            c.qtde,
+            c.pendente,
+            c.status,
+            c.data,
+            c.linha
+        );
+
+        await new Promise(r => setTimeout(r, 500));
+    }
+}
+
+// 🔹 RANCHO
 function anexarRancho(input, ordem){
     const file = input.files[0];
     if(file){
-        alert("PDF do rancho anexado para a ordem: " + ordem + "\\nArquivo: " + file.name);
+        alert("Rancho anexado: " + ordem);
     }
 }
+
 </script>
 </head>
 <body>
-
-<div style="margin-bottom:15px;">
-    <button onclick="exportarPagina()">📥 Baixar Página Completa</button>
-</div>
-
-<div id="conteudo">
 """
 
-# 🔄 SEU LOOP ORIGINAL (mantido)
+# 🔄 LOOP
 for linha, datas in estrutura.items():
 
     if linha_sel != "Todas" and linha != linha_sel:
@@ -309,6 +226,8 @@ for linha, datas in estrutura.items():
 
     bloco = f"<div class='linha'><h2>{linha}</h2>"
     tem_linha = False
+
+    lista_cards = []
 
     for data, turnos in datas.items():
 
@@ -318,21 +237,7 @@ for linha, datas in estrutura.items():
         itens_filtrados = []
 
         for turno, itens in turnos.items():
-
-            if turno_sel != "Todos":
-                continue
-
             for item in itens:
-                ordem = item.get("Ordem", "")
-                produto = item.get("Produto", "")
-                status_original = item.get("Status", "")
-
-                if ordem_pesquisa and ordem_pesquisa not in ordem:
-                    continue
-
-                if produto_pesquisa and produto_pesquisa.lower() not in produto.lower():
-                    continue
-
                 itens_filtrados.append(item)
 
         if not itens_filtrados:
@@ -340,64 +245,48 @@ for linha, datas in estrutura.items():
 
         tem_linha = True
 
-        bloco += f"<h3>📅 {data}</h3><div class='cards'>"
+        bloco += f"<h3>📅 {data}</h3>"
 
         for item in itens_filtrados:
             produto = item.get("Produto", "")
             ordem = item.get("Ordem", "")
-            status_original = item.get("Status", "")
             qtde_total = item.get("Qtde Total", "0")
             qtde_pendente = item.get("Qtde Pendente", "0")
+            status_original = item.get("Status", "")
 
-            total = to_float(qtde_total)
-            pendente = to_float(qtde_pendente)
-
-            status_lower = status_original.lower()
-
-            if "liberada" in status_lower:
-                classe = "liberada"
-            elif pendente == 0:
-                classe = "finalizado"
-            elif pendente < total:
-                classe = "producao"
-            else:
-                classe = "pendente"
+            lista_cards.append({
+                "produto": produto,
+                "ordem": ordem,
+                "turno": item.get("Turno","-"),
+                "qtde": qtde_total,
+                "pendente": qtde_pendente,
+                "status": status_original,
+                "data": data,
+                "linha": linha
+            })
 
             bloco += f"""
-            <div class='card {classe}'>
+            <div class='card'>
             <b>{produto}</b><br>
             Ordem: {ordem}<br>
-            Turno: {item.get("Turno","-")}<br>
-            Qtde: {qtde_total}<br>
-            Pendente: {qtde_pendente}<br>
-            Status: {status_original}<br>
 
-            <button onclick="exportarCard(
-                '{produto}',
-                '{ordem}',
-                '{item.get("Turno","-")}',
-                '{qtde_total}',
-                '{qtde_pendente}',
-                '{status_original}',
-                '{data}',
-                '{linha}'
-            )">📄 Gerar PDF</button>
+            <button onclick="exportarCard('{produto}','{ordem}','{item.get("Turno","-")}','{qtde_total}','{qtde_pendente}','{status_original}','{data}','{linha}')">
+            📄 PDF
+            </button>
 
-            <br><br>
-
-            <label style="font-size:12px;">📎 Rancho:</label><br>
-            <input type="file" accept="application/pdf"
-            onchange="anexarRancho(this, '{ordem}')"
-            style="font-size:11px;">
+            <input type="file" onchange="anexarRancho(this,'{ordem}')">
             </div>
             """
 
-        bloco += "</div>"
-    bloco += "</div>"
-
     if tem_linha:
+        bloco += f"""
+        <button onclick='exportarLinha({json.dumps(lista_cards)})'>
+        📥 Baixar PDFs da Linha
+        </button>
+        """
+        bloco += "</div>"
         html += bloco
 
-html += "</div></body></html>"
+html += "</body></html>"
 
 st.components.v1.html(html, height=900, scrolling=True)
