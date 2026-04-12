@@ -182,20 +182,126 @@ async function exportarPagina(){
     pdf.addImage(imgData, 'PNG', 0, 0, largura, altura);
     pdf.save("pagina_completa.pdf");
 }
+
+// 🔹 SUA FUNÇÃO ORIGINAL (mantida)
+async function exportarCard(produto, ordem, turno, qtde, pendente, status, data, linha){
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p','mm','a4');
+
+    let y = 10;
+
+    const logoUrl = "https://raw.githubusercontent.com/cavalcante-creator/Programa-o-pcp-dashboard/main/COL_LOGO_8.png";
+
+    try {
+        const img = await fetch(logoUrl);
+        const blob = await img.blob();
+        const reader = new FileReader();
+
+        await new Promise(resolve => {
+            reader.onloadend = resolve;
+            reader.readAsDataURL(blob);
+        });
+
+        const base64 = reader.result;
+        const props = pdf.getImageProperties(base64);
+
+        const largura = 30;
+        const altura = (props.height * largura) / props.width;
+
+        pdf.addImage(base64, 'PNG', 10, y, largura, altura);
+    } catch(e){}
+
+    pdf.setFont("helvetica","bold");
+    pdf.setFontSize(16);
+    pdf.text("ORDEM DE PRODUÇÃO", 70, y + 10);
+
+    y += 20;
+
+    pdf.setFillColor(44,62,80);
+    pdf.rect(10, y, 190, 8, 'F');
+
+    pdf.setTextColor(255,255,255);
+    pdf.text("DATA: " + data, 15, y + 5.5);
+    pdf.text("LINHA: " + linha, 120, y + 5.5);
+
+    pdf.setTextColor(0,0,0);
+    y += 18;
+
+    function campo(x,y,w,h,t,v){
+        pdf.setFontSize(8);
+        pdf.setFont("helvetica","bold");
+        pdf.text(t,x,y-1);
+
+        pdf.rect(x,y,w,h);
+
+        pdf.setFont("helvetica","normal");
+        pdf.setFontSize(10);
+
+        let linhas = pdf.splitTextToSize(v, w - 4);
+        pdf.text(linhas, x+2, y+6);
+    }
+
+    campo(10,y,120,12,"PRODUTO",produto);
+    campo(130,y,70,12,"ORDEM",ordem);
+    y+=16;
+
+    campo(10,y,60,12,"TURNO",turno);
+    campo(70,y,60,12,"QUANTIDADE PROGRAMADA",qtde);
+    campo(130,y,70,12,"QUANTIDADE PENDENTE",pendente);
+    y+=16;
+
+    campo(10,y,120,12,"STATUS",status);
+    campo(130,y,70,12,"OPERADOR","");
+    y+=16;
+
+    campo(10,y,120,12,"RANCHO","");
+    y+=20;
+
+    let colunas = ["HORA INICIO","HORA FIM","N PALLETS","SACOS (UN)","RASGADOS","PARADAS"];
+    let larguraTabela = 190/colunas.length;
+    let alturaLinha = 8;
+
+    pdf.setFont("helvetica","bold");
+
+    colunas.forEach((c,i)=>{
+        pdf.rect(10+i*larguraTabela,y,larguraTabela,alturaLinha);
+        pdf.text(c,10+i*larguraTabela+1,y+5);
+    });
+
+    pdf.setFont("helvetica","normal");
+    y+=alturaLinha;
+
+    const limite = 285;
+
+    while(y < limite){
+        for(let j=0;j<colunas.length;j++){
+            pdf.rect(10+j*larguraTabela,y,larguraTabela,alturaLinha);
+        }
+        y+=alturaLinha;
+    }
+
+    pdf.save("ordem_producao.pdf");
+}
+
+// 🔹 SUA FUNÇÃO ORIGINAL (mantida)
+function anexarRancho(input, ordem){
+    const file = input.files[0];
+    if(file){
+        alert("PDF do rancho anexado para a ordem: " + ordem + "\\nArquivo: " + file.name);
+    }
+}
 </script>
 </head>
 <body>
 
 <div style="margin-bottom:15px;">
-    <button onclick="exportarPagina()">
-        📥 Baixar Página Completa
-    </button>
+    <button onclick="exportarPagina()">📥 Baixar Página Completa</button>
 </div>
 
 <div id="conteudo">
 """
 
-# 🔄 LOOP (SEU ORIGINAL)
+# 🔄 SEU LOOP ORIGINAL (mantido)
 for linha, datas in estrutura.items():
 
     if linha_sel != "Todas" and linha != linha_sel:
@@ -219,6 +325,7 @@ for linha, datas in estrutura.items():
             for item in itens:
                 ordem = item.get("Ordem", "")
                 produto = item.get("Produto", "")
+                status_original = item.get("Status", "")
 
                 if ordem_pesquisa and ordem_pesquisa not in ordem:
                     continue
@@ -264,6 +371,24 @@ for linha, datas in estrutura.items():
             Qtde: {qtde_total}<br>
             Pendente: {qtde_pendente}<br>
             Status: {status_original}<br>
+
+            <button onclick="exportarCard(
+                '{produto}',
+                '{ordem}',
+                '{item.get("Turno","-")}',
+                '{qtde_total}',
+                '{qtde_pendente}',
+                '{status_original}',
+                '{data}',
+                '{linha}'
+            )">📄 Gerar PDF</button>
+
+            <br><br>
+
+            <label style="font-size:12px;">📎 Rancho:</label><br>
+            <input type="file" accept="application/pdf"
+            onchange="anexarRancho(this, '{ordem}')"
+            style="font-size:11px;">
             </div>
             """
 
