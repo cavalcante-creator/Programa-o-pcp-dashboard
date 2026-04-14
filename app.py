@@ -311,7 +311,7 @@ function anexarRancho(input, ordem){
 
 try {
     let texto = atob(base64.split(",")[1]);
-    let match = texto.match(/rancho\s*[:\-]?\s*(\d+)/i);
+    let match = texto.match(/rancho\s*\(?\s*(\d+)/i);
 
     if(match){
         numeroRancho = match[1];
