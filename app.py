@@ -307,10 +307,14 @@ function anexarRancho(input, ordem){
             localStorage.setItem("rancho_" + ordem, base64);
 
             // tenta extrair número do rancho
-            let numeroRancho = prompt("Digite o número do rancho:");
+            let texto = atob(base64.split(",")[1]);
 
-if(!numeroRancho){
-    numeroRancho = "NÃO INFORMADO";
+let numeroRancho = "NÃO ENCONTRADO";
+
+let match = texto.match(/rancho\s*[:\-]?\s*(\d+)/i);
+
+if(match){
+    numeroRancho = match[1];
 }
 
 localStorage.setItem("rancho_num_" + ordem, numeroRancho);
