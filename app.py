@@ -355,6 +355,20 @@ novaAba.document.write(`
 `);
 novaAba.document.close();
 }
+window.onload = function(){
+    document.querySelectorAll("[id^='status_']").forEach(el => {
+        let ordem = el.id.replace("status_", "");
+        let temRancho = localStorage.getItem("rancho_" + ordem);
+
+        if(temRancho){
+            el.innerHTML = "✅ Rancho anexado";
+            el.style.color = "green";
+        } else {
+            el.innerHTML = "❌ Nenhum rancho";
+            el.style.color = "red";
+        }
+    });
+};
 </script>
 </head>
 
@@ -466,6 +480,7 @@ for linha, datas in estrutura.items():
             style="font-size:11px;">
             <br>
             <button onclick="verRancho('{ordem}')">👁 Ver Rancho</button>
+            <div id="status_{ordem}" style="font-size:11px; margin-top:5px;"></div>
             </div>
             """
 
