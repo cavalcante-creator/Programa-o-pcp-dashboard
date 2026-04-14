@@ -260,7 +260,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.setFont("helvetica","normal");
     y+=alturaLinha;
 
-    const limite = 250;
+    const limite = 240;
 
     while(y < limite){
         for(let j=0;j<colunas.length;j++){
@@ -274,9 +274,9 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.text("OBSERVAÇÕES:", 10, y);
 
     y += 3;
-    pdf.rect(10, y, 190, 20);
+    pdf.rect(10, y, 190, 50);
 
-    y += 25;
+    y += 55;
 
     pdf.setFont("helvetica","bold");
     pdf.text("ASSINATURA DO OPERADOR:", 10, y);
@@ -307,103 +307,3 @@ function anexarRancho(input, ordem){
 
 <div id="conteudo">
 """
-
-for linha, datas in estrutura.items():
-
-    if linha_sel != "Todas" and linha != linha_sel:
-        continue
-
-    bloco = f"<div class='linha'><h2>{linha}</h2>"
-    tem_linha = False
-
-    for data, turnos in datas.items():
-
-        if not mostrar_todas and data != data_sel:
-            continue
-
-        itens_filtrados = []
-
-        for turno, itens in turnos.items():
-
-            if turno_sel != "Todos":
-                continue
-
-            for item in itens:
-                ordem = item.get("Ordem", "")
-                produto = item.get("Produto", "")
-                status_original = item.get("Status", "")
-
-                if ordem_pesquisa and ordem_pesquisa not in ordem:
-                    continue
-
-                if produto_pesquisa and produto_pesquisa.lower() not in produto.lower():
-                    continue
-
-                itens_filtrados.append(item)
-
-        if not itens_filtrados:
-            continue
-
-        tem_linha = True
-
-        bloco += f"<h3>📅 {data}</h3><div class='cards'>"
-
-        for item in itens_filtrados:
-            produto = item.get("Produto", "")
-            ordem = item.get("Ordem", "")
-            status_original = item.get("Status", "")
-            qtde_total = item.get("Qtde Total", "0")
-            qtde_pendente = item.get("Qtde Pendente", "0")
-
-            total = to_float(qtde_total)
-            pendente = to_float(qtde_pendente)
-
-            status_lower = status_original.lower()
-
-            if "liberada" in status_lower:
-                classe = "liberada"
-            elif pendente == 0:
-                classe = "finalizado"
-            elif pendente < total:
-                classe = "producao"
-            else:
-                classe = "pendente"
-
-            bloco += f"""
-            <div class='card {classe}'>
-            <b>{produto}</b><br>
-            Ordem: {ordem}<br>
-            Turno: {item.get("Turno","-")}<br>
-            Qtde: {qtde_total}<br>
-            Pendente: {qtde_pendente}<br>
-            Status: {status_original}<br>
-
-            <button onclick="exportarCard(
-                '{produto}',
-                '{ordem}',
-                '{item.get("Turno","-")}',
-                '{qtde_total}',
-                '{qtde_pendente}',
-                '{status_original}',
-                '{data}',
-                '{linha}'
-            )">📄 Gerar PDF</button>
-
-            <br><br>
-
-            <label style="font-size:12px;">📎 Rancho:</label><br>
-            <input type="file" accept="application/pdf"
-            onchange="anexarRancho(this, '{ordem}')"
-            style="font-size:11px;">
-            </div>
-            """
-
-        bloco += "</div>"
-    bloco += "</div>"
-
-    if tem_linha:
-        html += bloco
-
-html += "</div></body></html>"
-
-st.components.v1.html(html, height=900, scrolling=True)
