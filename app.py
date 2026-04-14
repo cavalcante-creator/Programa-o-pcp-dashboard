@@ -240,7 +240,9 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     campo(130,y,70,12,"OPERADOR","");
     y+=16;
 
-    campo(10,y,120,12,"RANCHO","");
+    const numeroRancho = localStorage.getItem("rancho_num_" + ordem) || "";
+
+campo(10,y,120,12,"RANCHO", numeroRancho);
     y+=20;
 
     let colunas = ["HORA INICIO","HORA FIM","N PALLETS","SACOS (UN)","RASGADOS","PARADAS"];
@@ -297,9 +299,23 @@ function anexarRancho(input, ordem){
         reader.onload = function(e){
             const base64 = e.target.result;
 
+            // salva o PDF
             localStorage.setItem("rancho_" + ordem, base64);
 
-            alert("✅ Rancho anexado com sucesso para a ordem: " + ordem);
+            // tenta extrair número do rancho
+            const texto = atob(base64.split(',')[1]);
+
+            let numeroRancho = "NÃO IDENTIFICADO";
+
+            const match = texto.match(/Rancho\s*(\d+)/i);
+            if(match){
+                numeroRancho = match[1];
+            }
+
+            // salva o número separado
+            localStorage.setItem("rancho_num_" + ordem, numeroRancho);
+
+            alert("✅ Rancho anexado\nNúmero: " + numeroRancho);
         };
 
         reader.readAsDataURL(file);
