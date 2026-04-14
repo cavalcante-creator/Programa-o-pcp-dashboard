@@ -260,7 +260,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.setFont("helvetica","normal");
     y+=alturaLinha;
 
-    const limite = 250;
+    const limite = 210;
 
     while(y < limite){
         for(let j=0;j<colunas.length;j++){
