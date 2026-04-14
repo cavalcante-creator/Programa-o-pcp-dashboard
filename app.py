@@ -127,29 +127,6 @@ html = """
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
-<script>
-let ranchos = {}; // 🔹 ADICIONADO
-
-function anexarRancho(input, ordem){
-    const file = input.files[0];
-
-    if(file){
-        const reader = new FileReader();
-
-        reader.onload = function(e){
-            ranchos[ordem] = {
-                nome: file.name,
-                arquivo: e.target.result
-            };
-
-            alert("PDF do rancho anexado para a ordem: " + ordem + "\\nArquivo: " + file.name);
-        };
-
-        reader.readAsDataURL(file);
-    }
-}
-</script>
-
 <style>
 body { font-family: 'Segoe UI'; background: #f5f7fa; margin: 20px; }
 
@@ -187,12 +164,138 @@ button {
     color: white;
 }
 </style>
+
+<script>
+
+// 🔹 ADICIONADO
+let ranchos = {};
+
+function anexarRancho(input, ordem){
+    const file = input.files[0];
+
+    if(file){
+        const reader = new FileReader();
+
+        reader.onload = function(e){
+            ranchos[ordem] = {
+                nome: file.name,
+                arquivo: e.target.result
+            };
+
+            alert("PDF do rancho anexado para a ordem: " + ordem + "\\nArquivo: " + file.name);
+        };
+
+        reader.readAsDataURL(file);
+    }
+}
+
+</script>
 </head>
 <body>
 
+<div style="margin-bottom:15px;">
+    <button onclick="exportarPagina()">📥 Baixar Página Completa</button>
+</div>
+
 <div id="conteudo">
 """
-# 🔄 RESTANTE DO SEU CÓDIGO SEGUE IGUAL (sem alteração)
+
+# 🔄 SEU LOOP ORIGINAL INTACTO
+for linha, datas in estrutura.items():
+
+    if linha_sel != "Todas" and linha != linha_sel:
+        continue
+
+    bloco = f"<div class='linha'><h2>{linha}</h2>"
+    tem_linha = False
+
+    for data, turnos in datas.items():
+
+        if not mostrar_todas and data != data_sel:
+            continue
+
+        itens_filtrados = []
+
+        for turno, itens in turnos.items():
+
+            if turno_sel != "Todos":
+                continue
+
+            for item in itens:
+                ordem = item.get("Ordem", "")
+                produto = item.get("Produto", "")
+                status_original = item.get("Status", "")
+
+                if ordem_pesquisa and ordem_pesquisa not in ordem:
+                    continue
+
+                if produto_pesquisa and produto_pesquisa.lower() not in produto.lower():
+                    continue
+
+                itens_filtrados.append(item)
+
+        if not itens_filtrados:
+            continue
+
+        tem_linha = True
+
+        bloco += f"<h3>📅 {data}</h3><div class='cards'>"
+
+        for item in itens_filtrados:
+            produto = item.get("Produto", "")
+            ordem = item.get("Ordem", "")
+            status_original = item.get("Status", "")
+            qtde_total = item.get("Qtde Total", "0")
+            qtde_pendente = item.get("Qtde Pendente", "0")
+
+            total = to_float(qtde_total)
+            pendente = to_float(qtde_pendente)
+
+            status_lower = status_original.lower()
+
+            if "liberada" in status_lower:
+                classe = "liberada"
+            elif pendente == 0:
+                classe = "finalizado"
+            elif pendente < total:
+                classe = "producao"
+            else:
+                classe = "pendente"
+
+            bloco += f"""
+            <div class='card {classe}'>
+            <b>{produto}</b><br>
+            Ordem: {ordem}<br>
+            Turno: {item.get("Turno","-")}<br>
+            Qtde: {qtde_total}<br>
+            Pendente: {qtde_pendente}<br>
+            Status: {status_original}<br>
+
+            <button onclick="exportarCard(
+                '{produto}',
+                '{ordem}',
+                '{item.get("Turno","-")}',
+                '{qtde_total}',
+                '{qtde_pendente}',
+                '{status_original}',
+                '{data}',
+                '{linha}'
+            )">📄 Gerar PDF</button>
+
+            <br><br>
+
+            <label style="font-size:12px;">📎 Rancho:</label><br>
+            <input type="file" accept="application/pdf"
+            onchange="anexarRancho(this, '{ordem}')"
+            style="font-size:11px;">
+            </div>
+            """
+
+        bloco += "</div>"
+    bloco += "</div>"
+
+    if tem_linha:
+        html += bloco
 
 html += "</div></body></html>"
 
