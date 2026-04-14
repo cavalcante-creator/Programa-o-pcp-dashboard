@@ -274,9 +274,9 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.text("OBSERVAÇÕES:", 10, y);
 
     y += 3;
-    pdf.rect(10, y, 190, 30);
+    pdf.rect(10, y, 190, 20);
 
-    y += 35;
+    y += 25;
 
     pdf.setFont("helvetica","bold");
     pdf.text("ASSINATURA DO OPERADOR:", 10, y);
