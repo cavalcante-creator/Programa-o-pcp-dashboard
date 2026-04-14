@@ -307,14 +307,24 @@ function anexarRancho(input, ordem){
             localStorage.setItem("rancho_" + ordem, base64);
 
             // tenta extrair número do rancho
-            let texto = atob(base64.split(",")[1]);
+            let numeroRancho = "NÃO ENCONTRADO";
 
-let numeroRancho = "NÃO ENCONTRADO";
+try {
+    let texto = atob(base64.split(",")[1]);
+    let match = texto.match(/rancho\s*[:\-]?\s*(\d+)/i);
 
-let match = texto.match(/rancho\s*[:\-]?\s*(\d+)/i);
+    if(match){
+        numeroRancho = match[1];
+    }
+} catch(e) {}
 
-if(match){
-    numeroRancho = match[1];
+// 👉 se não encontrou, deixa usuário informar (sem obrigar)
+if(numeroRancho === "NÃO ENCONTRADO"){
+    let manual = prompt("Número do rancho não identificado automaticamente. Digite manualmente:");
+
+    if(manual){
+        numeroRancho = manual;
+    }
 }
 
 localStorage.setItem("rancho_num_" + ordem, numeroRancho);
