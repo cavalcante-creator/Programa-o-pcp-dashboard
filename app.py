@@ -177,122 +177,50 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF('p','mm','a4');
 
-    let y = 10;
-
-    const logoUrl = "https://raw.githubusercontent.com/cavalcante-creator/Programa-o-pcp-dashboard/main/COL_LOGO_8.png";
-
-    try {
-        const img = await fetch(logoUrl);
-        const blob = await img.blob();
-        const reader = new FileReader();
-
-        await new Promise(resolve => {
-            reader.onloadend = resolve;
-            reader.readAsDataURL(blob);
-        });
-
-        const base64 = reader.result;
-        const props = pdf.getImageProperties(base64);
-
-        const largura = 30;
-        const altura = (props.height * largura) / props.width;
-
-        pdf.addImage(base64, 'PNG', 10, y, largura, altura);
-    } catch(e){}
-
     pdf.setFont("helvetica","bold");
     pdf.setFontSize(16);
-    pdf.text("ORDEM DE PRODUÇÃO", 70, y + 10);
+    pdf.text("ORDEM DE PRODUÇÃO", 70, 20);
 
-    y += 20;
-
-    pdf.setFillColor(44,62,80);
-    pdf.rect(10, y, 190, 8, 'F');
-
-    pdf.setTextColor(255,255,255);
-    pdf.text("DATA: " + data, 15, y + 5.5);
-    pdf.text("LINHA: " + linha, 120, y + 5.5);
-
-    pdf.setTextColor(0,0,0);
-    y += 18;
-
-    function campo(x,y,w,h,t,v){
-        pdf.setFontSize(8);
-        pdf.setFont("helvetica","bold");
-        pdf.text(t,x,y-1);
-        pdf.rect(x,y,w,h);
-        pdf.setFont("helvetica","normal");
-        pdf.setFontSize(10);
-        let linhas = pdf.splitTextToSize(v, w - 4);
-        pdf.text(linhas, x+2, y+6);
-    }
-
-    campo(10,y,120,12,"PRODUTO",produto);
-    campo(130,y,70,12,"ORDEM",ordem);
-    y+=16;
-
-    campo(10,y,60,12,"TURNO",turno);
-    campo(70,y,60,12,"QUANTIDADE PROGRAMADA",qtde);
-    campo(130,y,70,12,"QUANTIDADE PENDENTE",pendente);
-    y+=16;
-
-    campo(10,y,120,12,"STATUS",status);
-    campo(130,y,70,12,"OPERADOR","");
-    y+=16;
-
-    campo(10,y,120,12,"RANCHO","");
-    y+=20;
-
-    let colunas = ["HORA INICIO","HORA FIM","N PALLETS","SACOS (UN)","RASGADOS","PARADAS"];
-    let larguraTabela = 190/colunas.length;
-    let alturaLinha = 8;
-
-    pdf.setFont("helvetica","bold");
-
-    colunas.forEach((c,i)=>{
-        pdf.rect(10+i*larguraTabela,y,larguraTabela,alturaLinha);
-        pdf.text(c,10+i*larguraTabela+1,y+5);
-    });
-
-    pdf.setFont("helvetica","normal");
-    y+=alturaLinha;
-
-    const limite = 210;
-
-    while(y < limite){
-        for(let j=0;j<colunas.length;j++){
-            pdf.rect(10+j*larguraTabela,y,larguraTabela,alturaLinha);
-        }
-        y+=alturaLinha;
-    }
-
-    y += 5;
-    pdf.setFont("helvetica","bold");
-    pdf.text("OBSERVAÇÕES:", 10, y);
-
-    y += 3;
-    pdf.rect(10, y, 190, 30);
-
-    y += 45;
-
-    pdf.setFont("helvetica","bold");
-    pdf.text("ASSINATURA DO OPERADOR:", 10, y);
-
-    y += 10;
-    pdf.line(10, y, 100, y);
-
-    pdf.setFont("helvetica","normal");
-    pdf.setFontSize(8);
-    pdf.text("Nome / Assinatura", 10, y + 4);
+    pdf.text("Produto: " + produto, 10, 40);
+    pdf.text("Ordem: " + ordem, 10, 50);
+    pdf.text("Turno: " + turno, 10, 60);
+    pdf.text("Qtde: " + qtde, 10, 70);
+    pdf.text("Pendente: " + pendente, 10, 80);
+    pdf.text("Status: " + status, 10, 90);
 
     pdf.save("ordem_producao.pdf");
 }
 
 function anexarRancho(input, ordem){
     const file = input.files[0];
+
     if(file){
-        alert("PDF do rancho anexado para a ordem: " + ordem + "\\nArquivo: " + file.name);
+        const reader = new FileReader();
+
+        reader.onload = function(e){
+            const base64 = e.target.result;
+
+            localStorage.setItem("rancho_" + ordem, base64);
+
+            alert("✅ Rancho anexado com sucesso para a ordem: " + ordem);
+        };
+
+        reader.readAsDataURL(file);
     }
+}
+
+function verRancho(ordem){
+    const arquivo = localStorage.getItem("rancho_" + ordem);
+
+    if(!arquivo){
+        alert("❌ Nenhum rancho anexado para essa ordem");
+        return;
+    }
+
+    const novaAba = window.open();
+    novaAba.document.write(`
+        <iframe src="${arquivo}" width="100%" height="100%"></iframe>
+    `);
 }
 </script>
 </head>
@@ -393,6 +321,8 @@ for linha, datas in estrutura.items():
             <input type="file" accept="application/pdf"
             onchange="anexarRancho(this, '{ordem}')"
             style="font-size:11px;">
+            <br>
+<button onclick="verRancho('{ordem}')">👁 Ver Rancho</button>
             </div>
             """
 
