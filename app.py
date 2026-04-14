@@ -200,8 +200,7 @@ try {
 
     pdf.addImage(base64, 'PNG', 10, y, largura, altura);
 
-} catch(e){}   
-        });
+} catch(e){}
 
         
 
