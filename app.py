@@ -181,24 +181,29 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
 
     const logoUrl = "https://raw.githubusercontent.com/cavalcante-creator/Programa-o-pcp-dashboard/main/COL_LOGO_8.png";
 
-    try {
-        const img = await fetch(logoUrl);
-        const blob = await img.blob();
-        const reader = new FileReader();
+try {
+    const img = await fetch(logoUrl);
+    const blob = await img.blob();
 
-        await new Promise(resolve => {
-            reader.onloadend = resolve;
-            reader.readAsDataURL(blob);
+    const reader = new FileReader();
+
+    await new Promise(resolve => {
+        reader.onloadend = resolve;
+        reader.readAsDataURL(blob);
+    });
+
+    const base64 = reader.result;
+    const props = pdf.getImageProperties(base64);
+
+    const largura = 30;
+    const altura = (props.height * largura) / props.width;
+
+    pdf.addImage(base64, 'PNG', 10, y, largura, altura);
+
+} catch(e){}   
         });
 
-        const base64 = reader.result;
-        const props = pdf.getImageProperties(base64);
-
-        const largura = 30;
-        const altura = (props.height * largura) / props.width;
-
-        pdf.addImage(base64, 'PNG', 10, y, largura, altura);
-    } catch(e){}
+        
 
     pdf.setFont("helvetica","bold");
     pdf.setFontSize(16);
@@ -242,7 +247,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
 
     const numeroRancho = localStorage.getItem("rancho_num_" + ordem) || "";
 
-campo(10,y,120,12,"RANCHO", numeroRancho);
+campo(10, y, 120, 12, "RANCHO", numeroRancho);
     y+=20;
 
     let colunas = ["HORA INICIO","HORA FIM","N PALLETS","SACOS (UN)","RASGADOS","PARADAS"];
@@ -303,19 +308,15 @@ function anexarRancho(input, ordem){
             localStorage.setItem("rancho_" + ordem, base64);
 
             // tenta extrair número do rancho
-            const texto = atob(base64.split(',')[1]);
+            let numeroRancho = prompt("Digite o número do rancho:");
 
-            let numeroRancho = "NÃO IDENTIFICADO";
+if(!numeroRancho){
+    numeroRancho = "NÃO INFORMADO";
+}
 
-            const match = texto.match(/Rancho\s*(\d+)/i);
-            if(match){
-                numeroRancho = match[1];
-            }
+localStorage.setItem("rancho_num_" + ordem, numeroRancho);
 
-            // salva o número separado
-            localStorage.setItem("rancho_num_" + ordem, numeroRancho);
-
-            alert("✅ Rancho anexado\nNúmero: " + numeroRancho);
+alert("✅ Rancho anexado com sucesso");
         };
 
         reader.readAsDataURL(file);
@@ -330,10 +331,16 @@ function verRancho(ordem){
         return;
     }
 
-    const novaAba = window.open();
-    novaAba.document.write(`
+    const novaAba = window.open("", "_blank");
+novaAba.document.write(`
+    <html>
+    <head><title>Rancho</title></head>
+    <body style="margin:0">
         <iframe src="${arquivo}" width="100%" height="100%"></iframe>
-    `);
+    </body>
+    </html>
+`);
+novaAba.document.close();
 }
 </script>
 </head>
@@ -364,7 +371,8 @@ for linha, datas in estrutura.items():
 
         for turno, itens in turnos.items():
 
-            if turno_sel != "Todos":
+            # 🔹 FILTRO DE TURNO
+            if turno_sel != "Todos" and turno != turno_sel:
                 continue
 
             for item in itens:
@@ -372,14 +380,23 @@ for linha, datas in estrutura.items():
                 produto = item.get("Produto", "")
                 status_original = item.get("Status", "")
 
+                status_limpo = limpar_status(status_original)
+
+                # 🔹 FILTRO DE STATUS
+                if status_sel != "Todos" and status_limpo != status_sel:
+                    continue
+
+                # 🔹 FILTRO ORDEM
                 if ordem_pesquisa and ordem_pesquisa not in ordem:
                     continue
 
+                # 🔹 FILTRO PRODUTO
                 if produto_pesquisa and produto_pesquisa.lower() not in produto.lower():
                     continue
 
                 itens_filtrados.append(item)
 
+        # ✅ posição correta
         if not itens_filtrados:
             continue
 
@@ -435,7 +452,7 @@ for linha, datas in estrutura.items():
             onchange="anexarRancho(this, '{ordem}')"
             style="font-size:11px;">
             <br>
-<button onclick="verRancho('{ordem}')">👁 Ver Rancho</button>
+            <button onclick="verRancho('{ordem}')">👁 Ver Rancho</button>
             </div>
             """
 
@@ -444,7 +461,6 @@ for linha, datas in estrutura.items():
 
     if tem_linha:
         html += bloco
-
 html += "</div></body></html>"
 
 st.components.v1.html(html, height=900, scrolling=True)
