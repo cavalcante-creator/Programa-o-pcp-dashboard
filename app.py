@@ -159,6 +159,7 @@ button {
 </style>
 
 <script>
+let ranchos = {};
 async function exportarPagina(){
     const { jsPDF } = window.jspdf;
     const elemento = document.getElementById("conteudo");
@@ -285,13 +286,39 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.setFontSize(8);
     pdf.text("Nome / Assinatura", 10, y + 4);
 
+    if(ranchos[ordem]){
+    const img = new Image();
+
+    img.src = ranchos[ordem];
+
+    img.onload = function(){
+        pdf.addPage();
+
+        const largura = 210;
+        const altura = (img.height * largura) / img.width;
+
+        pdf.addImage(img, 'PNG', 0, 0, largura, altura);
+
+        pdf.save("ordem_producao.pdf");
+    }
+}else{
     pdf.save("ordem_producao.pdf");
+}
 }
 
 function anexarRancho(input, ordem){
     const file = input.files[0];
+
     if(file){
-        alert("PDF do rancho anexado para a ordem: " + ordem + "\\nArquivo: " + file.name);
+        const reader = new FileReader();
+
+        reader.onload = function(e){
+            ranchos[ordem] = e.target.result;
+
+            alert("Rancho anexado com sucesso!");
+        };
+
+        reader.readAsDataURL(file);
     }
 }
 </script>
