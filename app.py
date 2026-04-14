@@ -5,11 +5,9 @@ import csv
 from io import StringIO
 from datetime import datetime, date
 
-# 🔄 Auto refresh
 st_autorefresh(interval=60000)
 st.set_page_config(layout="wide")
 
-# 🎨 HEADER
 st.markdown("""
 <style>
 .block-container { padding-top: 1.5rem; }
@@ -28,7 +26,6 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# 🔗 GOOGLE SHEETS
 sheet_id = "1eQHvLVw-WLsA4UruaM6GThcy0dgb5ONNAn8AZ_KwBuU"
 
 abas = [
@@ -48,7 +45,6 @@ for aba in abas:
         linha["Linha"] = aba
         dados_total.append(linha)
 
-# 🔧 FUNÇÕES
 def nome_linha(linha):
     return linha.replace("BASE_", "").replace("_", " ")
 
@@ -75,7 +71,6 @@ def limpar_status(s):
     if "LIBERADA" in s: return "LIBERADA"
     return s
 
-# 🔧 ORGANIZAÇÃO
 estrutura = {}
 
 for item in dados_total:
@@ -87,7 +82,6 @@ for item in dados_total:
 
     estrutura.setdefault(linha, {}).setdefault(data_usar, {}).setdefault(turno, []).append(item)
 
-# 🔽 FILTROS
 col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
 
 linhas = sorted(set(nome_linha(i["Linha"]) for i in dados_total))
@@ -120,7 +114,6 @@ mostrar_todas = colb2.checkbox("Mostrar todas as datas", value=True)
 
 data_sel = data_input.strftime("%d/%m/%Y")
 
-# 🔥 HTML + PDF
 html = """
 <html>
 <head>
@@ -131,7 +124,6 @@ html = """
 
 let ranchos = {};
 
-// 🔹 EXPORTAR PÁGINA
 async function exportarPagina(){
     const { jsPDF } = window.jspdf;
     const elemento = document.getElementById("conteudo");
@@ -146,33 +138,11 @@ async function exportarPagina(){
     pdf.save("pagina_completa.pdf");
 }
 
-// 🔹 EXPORTAR ORDEM
 async function exportarCard(produto, ordem, turno, qtde, pendente, status, data, linha){
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF('p','mm','a4');
 
     let y = 10;
-
-    const logoUrl = "https://raw.githubusercontent.com/cavalcante-creator/Programa-o-pcp-dashboard/main/COL_LOGO_8.png";
-
-    try {
-        const img = await fetch(logoUrl);
-        const blob = await img.blob();
-        const reader = new FileReader();
-
-        await new Promise(resolve => {
-            reader.onloadend = resolve;
-            reader.readAsDataURL(blob);
-        });
-
-        const base64 = reader.result;
-        const props = pdf.getImageProperties(base64);
-
-        const largura = 30;
-        const altura = (props.height * largura) / props.width;
-
-        pdf.addImage(base64, 'PNG', 10, y, largura, altura);
-    } catch(e){}
 
     pdf.setFont("helvetica","bold");
     pdf.setFontSize(16);
@@ -180,98 +150,89 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
 
     y += 20;
 
-    pdf.setFillColor(44,62,80);
-    pdf.rect(10, y, 190, 8, 'F');
+    pdf.text("Produto: " + produto, 10, y); y+=8;
+    pdf.text("Ordem: " + ordem, 10, y); y+=8;
+    pdf.text("Turno: " + turno, 10, y); y+=8;
+    pdf.text("Qtde: " + qtde, 10, y); y+=8;
+    pdf.text("Pendente: " + pendente, 10, y); y+=8;
+    pdf.text("Status: " + status, 10, y); y+=10;
 
-    pdf.setTextColor(255,255,255);
-    pdf.text("DATA: " + data, 15, y + 5.5);
-    pdf.text("LINHA: " + linha, 120, y + 5.5);
-
-    pdf.setTextColor(0,0,0);
-    y += 18;
-
-    function campo(x,y,w,h,t,v){
-        pdf.setFontSize(8);
-        pdf.setFont("helvetica","bold");
-        pdf.text(t,x,y-1);
-        pdf.rect(x,y,w,h);
-        pdf.setFont("helvetica","normal");
-        pdf.setFontSize(10);
-        let linhas = pdf.splitTextToSize(v, w - 4);
-        pdf.text(linhas, x+2, y+6);
-    }
-
-    campo(10,y,120,12,"PRODUTO",produto);
-    campo(130,y,70,12,"ORDEM",ordem);
-    y+=16;
-
-    campo(10,y,60,12,"TURNO",turno);
-    campo(70,y,60,12,"QUANTIDADE PROGRAMADA",qtde);
-    campo(130,y,70,12,"QUANTIDADE PENDENTE",pendente);
-    y+=16;
-
-    campo(10,y,120,12,"STATUS",status);
-    campo(130,y,70,12,"OPERADOR","");
-    y+=16;
-
-    campo(10,y,120,12,"RANCHO","");
-    y+=20;
-
-    let colunas = ["HORA INICIO","HORA FIM","N PALLETS","SACOS (UN)","RASGADOS","PARADAS"];
-    let larguraTabela = 190/colunas.length;
-    let alturaLinha = 8;
-
-    pdf.setFont("helvetica","bold");
-
-    colunas.forEach((c,i)=>{
-        pdf.rect(10+i*larguraTabela,y,larguraTabela,alturaLinha);
-        pdf.text(c,10+i*larguraTabela+1,y+5);
-    });
-
-    pdf.setFont("helvetica","normal");
-    y+=alturaLinha;
-
-    const limite = 180;
-
-    while(y < limite){
-        for(let j=0;j<colunas.length;j++){
-            pdf.rect(10+j*larguraTabela,y,larguraTabela,alturaLinha);
-        }
-        y+=alturaLinha;
-    }
-
-    y += 5;
-    pdf.setFont("helvetica","bold");
     pdf.text("OBSERVAÇÕES:", 10, y);
+    y+=5;
+    pdf.rect(10, y, 180, 40);
 
-    y += 3;
-    pdf.rect(10, y, 190, 50);
-
-    y += 55;
-
-    pdf.setFont("helvetica","bold");
+    y+=50;
     pdf.text("ASSINATURA DO OPERADOR:", 10, y);
-
-    y += 10;
+    y+=10;
     pdf.line(10, y, 100, y);
 
     pdf.save("ordem_producao.pdf");
 }
 
-// 🔹 ANEXAR RANCHO
 function anexarRancho(input, ordem){
     const file = input.files[0];
     if(file){
         const reader = new FileReader();
         reader.onload = function(e){
-            ranchos[ordem] = {
-                nome: file.name,
-                arquivo: e.target.result
-            };
-            alert("PDF do rancho anexado: " + file.name);
+            ranchos[ordem] = e.target.result;
+            alert("Rancho anexado: " + file.name);
         };
         reader.readAsDataURL(file);
     }
 }
 
 </script>
+</head>
+<body>
+
+<div style="margin-bottom:15px;">
+<button onclick="exportarPagina()">📥 Baixar Página Completa</button>
+</div>
+
+<div id="conteudo">
+"""
+
+for linha, datas in estrutura.items():
+
+    if linha_sel != "Todas" and linha != linha_sel:
+        continue
+
+    html += f"<div class='linha'><h2>{linha}</h2>"
+
+    for data, turnos in datas.items():
+
+        if not mostrar_todas and data != data_sel:
+            continue
+
+        html += f"<h3>📅 {data}</h3><div class='cards'>"
+
+        for turno, itens in turnos.items():
+            for item in itens:
+                html += f"""
+                <div class='card'>
+                <b>{item.get("Produto","")}</b><br>
+                Ordem: {item.get("Ordem","")}<br>
+
+                <button onclick="exportarCard(
+                '{item.get("Produto","")}',
+                '{item.get("Ordem","")}',
+                '{item.get("Turno","")}',
+                '{item.get("Qtde Total","")}',
+                '{item.get("Qtde Pendente","")}',
+                '{item.get("Status","")}',
+                '{data}',
+                '{linha}'
+                )">📄 Gerar PDF</button>
+
+                <br><br>
+
+                <input type="file" accept="application/pdf"
+                onchange="anexarRancho(this, '{item.get("Ordem","")}')">
+                </div>
+                """
+
+        html += "</div></div>"
+
+html += "</div></body></html>"
+
+st.components.v1.html(html, height=900, scrolling=True)
