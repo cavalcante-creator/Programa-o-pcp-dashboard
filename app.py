@@ -5,11 +5,9 @@ import csv
 from io import StringIO
 from datetime import datetime, date
 
-# 🔄 Auto refresh
 st_autorefresh(interval=60000)
 st.set_page_config(layout="wide")
 
-# 🎨 HEADER
 st.markdown("""
 <style>
 .block-container { padding-top: 1.5rem; }
@@ -28,7 +26,6 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# 🔗 GOOGLE SHEETS
 sheet_id = "1eQHvLVw-WLsA4UruaM6GThcy0dgb5ONNAn8AZ_KwBuU"
 
 abas = [
@@ -48,7 +45,6 @@ for aba in abas:
         linha["Linha"] = aba
         dados_total.append(linha)
 
-# 🔧 FUNÇÕES
 def nome_linha(linha):
     return linha.replace("BASE_", "").replace("_", " ")
 
@@ -75,7 +71,6 @@ def limpar_status(s):
     if "LIBERADA" in s: return "LIBERADA"
     return s
 
-# 🔧 ORGANIZAÇÃO
 estrutura = {}
 
 for item in dados_total:
@@ -87,7 +82,6 @@ for item in dados_total:
 
     estrutura.setdefault(linha, {}).setdefault(data_usar, {}).setdefault(turno, []).append(item)
 
-# 🔽 FILTROS
 col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
 
 linhas = sorted(set(nome_linha(i["Linha"]) for i in dados_total))
@@ -120,7 +114,6 @@ mostrar_todas = colb2.checkbox("Mostrar todas as datas", value=True)
 
 data_sel = data_input.strftime("%d/%m/%Y")
 
-# 🔥 HTML + PDF
 html = """
 <html>
 <head>
@@ -168,14 +161,11 @@ button {
 <script>
 async function exportarPagina(){
     const { jsPDF } = window.jspdf;
-
     const elemento = document.getElementById("conteudo");
-
     const canvas = await html2canvas(elemento, { scale: 2 });
     const imgData = canvas.toDataURL("image/png");
 
     const pdf = new jsPDF('p','mm','a4');
-
     const largura = 210;
     const altura = (canvas.height * largura) / canvas.width;
 
@@ -183,7 +173,6 @@ async function exportarPagina(){
     pdf.save("pagina_completa.pdf");
 }
 
-// 🔹 FUNÇÃO COMPLETA COM OBSERVAÇÕES E ASSINATURA
 async function exportarCard(produto, ordem, turno, qtde, pendente, status, data, linha){
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF('p','mm','a4');
@@ -280,7 +269,6 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
         y+=alturaLinha;
     }
 
-    // OBSERVAÇÕES
     y += 5;
     pdf.setFont("helvetica","bold");
     pdf.text("OBSERVAÇÕES:", 10, y);
@@ -290,7 +278,6 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
 
     y += 25;
 
-    // ASSINATURA
     pdf.setFont("helvetica","bold");
     pdf.text("ASSINATURA DO OPERADOR:", 10, y);
 
@@ -303,6 +290,13 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
 
     pdf.save("ordem_producao.pdf");
 }
+
+function anexarRancho(input, ordem){
+    const file = input.files[0];
+    if(file){
+        alert("PDF do rancho anexado para a ordem: " + ordem + "\\nArquivo: " + file.name);
+    }
+}
 </script>
 </head>
 <body>
@@ -313,5 +307,103 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
 
 <div id="conteudo">
 """
-# (restante do seu código segue igual, sem alteração)
-```
+
+for linha, datas in estrutura.items():
+
+    if linha_sel != "Todas" and linha != linha_sel:
+        continue
+
+    bloco = f"<div class='linha'><h2>{linha}</h2>"
+    tem_linha = False
+
+    for data, turnos in datas.items():
+
+        if not mostrar_todas and data != data_sel:
+            continue
+
+        itens_filtrados = []
+
+        for turno, itens in turnos.items():
+
+            if turno_sel != "Todos":
+                continue
+
+            for item in itens:
+                ordem = item.get("Ordem", "")
+                produto = item.get("Produto", "")
+                status_original = item.get("Status", "")
+
+                if ordem_pesquisa and ordem_pesquisa not in ordem:
+                    continue
+
+                if produto_pesquisa and produto_pesquisa.lower() not in produto.lower():
+                    continue
+
+                itens_filtrados.append(item)
+
+        if not itens_filtrados:
+            continue
+
+        tem_linha = True
+
+        bloco += f"<h3>📅 {data}</h3><div class='cards'>"
+
+        for item in itens_filtrados:
+            produto = item.get("Produto", "")
+            ordem = item.get("Ordem", "")
+            status_original = item.get("Status", "")
+            qtde_total = item.get("Qtde Total", "0")
+            qtde_pendente = item.get("Qtde Pendente", "0")
+
+            total = to_float(qtde_total)
+            pendente = to_float(qtde_pendente)
+
+            status_lower = status_original.lower()
+
+            if "liberada" in status_lower:
+                classe = "liberada"
+            elif pendente == 0:
+                classe = "finalizado"
+            elif pendente < total:
+                classe = "producao"
+            else:
+                classe = "pendente"
+
+            bloco += f"""
+            <div class='card {classe}'>
+            <b>{produto}</b><br>
+            Ordem: {ordem}<br>
+            Turno: {item.get("Turno","-")}<br>
+            Qtde: {qtde_total}<br>
+            Pendente: {qtde_pendente}<br>
+            Status: {status_original}<br>
+
+            <button onclick="exportarCard(
+                '{produto}',
+                '{ordem}',
+                '{item.get("Turno","-")}',
+                '{qtde_total}',
+                '{qtde_pendente}',
+                '{status_original}',
+                '{data}',
+                '{linha}'
+            )">📄 Gerar PDF</button>
+
+            <br><br>
+
+            <label style="font-size:12px;">📎 Rancho:</label><br>
+            <input type="file" accept="application/pdf"
+            onchange="anexarRancho(this, '{ordem}')"
+            style="font-size:11px;">
+            </div>
+            """
+
+        bloco += "</div>"
+    bloco += "</div>"
+
+    if tem_linha:
+        html += bloco
+
+html += "</div></body></html>"
+
+st.components.v1.html(html, height=900, scrolling=True)
