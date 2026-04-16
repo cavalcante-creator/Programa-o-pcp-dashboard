@@ -249,7 +249,13 @@ try {
 campo(10, y, 120, 12, "RANCHO", numeroRancho);
     y+=20;
 
-    let colunas = ["HORA INICIO","HORA FIM","N PALLETS","SACOS (UN)","RASGADOS","PARADAS"];
+    let colunas;
+
+if(linha.toUpperCase().includes("AREA LIQUIDA")){
+    colunas = ["HORA INICIO","HORA FIM","N PALLETS","FD","RASGADOS","PARADAS"];
+} else {
+    colunas = ["HORA INICIO","HORA FIM","N PALLETS","SACOS (UN)","RASGADOS","PARADAS"];
+}
     let larguraTabela = 190/colunas.length;
     let alturaLinha = 8;
 
