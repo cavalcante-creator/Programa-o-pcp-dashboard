@@ -458,34 +458,33 @@ for linha, datas in estrutura.items():
             if turno_sel != "Todos" and turno != turno_sel:
                 continue
 
-            for item in itens:
+           for item in itens:
     ordem = item.get("Ordem", "")
     produto = item.get("Produto", "")
     status_original = item.get("Status", "")
 
     status_limpo = limpar_status(status_original)
 
-    # 🔹 NOVO: verifica ENSACADO
+    # 🔹 ENSACADO (COLUNA J)
     ensacado = item.get("Ensacado", "")
     tem_ensacado = str(ensacado).strip() not in ["", "0", "0,0", "0.0"]
 
-    # 🔹 FILTRO DE STATUS
+    # 👉 SE TEM ENSACADO → MOSTRA DIRETO (fura filtros)
+    if tem_ensacado:
+        itens_filtrados.append(item)
+        continue
+
+    # 🔹 FILTROS NORMAIS
     if status_sel != "Todos" and status_limpo != status_sel:
         continue
 
-    # 🔹 FILTRO ORDEM
     if ordem_pesquisa and ordem_pesquisa not in ordem:
         continue
 
-    # 🔹 FILTRO PRODUTO
     if produto_pesquisa and produto_pesquisa.lower() not in produto.lower():
         continue
 
-    # 🔹 GARANTE QUE ENSACADO APAREÇA
-    if tem_ensacado:
-        itens_filtrados.append(item)
-    else:
-        itens_filtrados.append(item)
+    itens_filtrados.append(item)
 
         # ✅ posição correta
         if not itens_filtrados:
