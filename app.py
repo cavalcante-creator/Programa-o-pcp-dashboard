@@ -2,6 +2,7 @@ import streamlit as st
 from streamlit_autorefresh import st_autorefresh
 import requests
 import csv
+import json
 from io import StringIO
 from datetime import datetime, date
 
@@ -65,7 +66,8 @@ dados_total = []
 
 for aba in abas:
     url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/gviz/tq?tqx=out:csv&sheet={aba}"
-    response = requests.get(url)
+    response = requests.get(url, timeout=30)
+    response.raise_for_status()
     f = StringIO(response.text)
     reader = csv.DictReader(f)
 
@@ -247,7 +249,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
         const largura = 30;
         const altura = (props.height * largura) / props.width;
         pdf.addImage(base64, 'PNG', 10, y, largura, altura);
-    } catch(e) {}
+    } catch(e){}
 
     pdf.setFont("helvetica","bold");
     pdf.setFontSize(16);
@@ -269,7 +271,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
         pdf.rect(x,y,w,h);
         pdf.setFont("helvetica","normal");
         pdf.setFontSize(10);
-        let linhas = pdf.splitTextToSize(v, w - 4);
+        let linhas = pdf.splitTextToSize(String(v || ""), w - 4);
         pdf.text(linhas, x+2, y+6);
     }
 
@@ -474,13 +476,16 @@ for linha, datas in estrutura.items():
                 continue
 
             for item in itens:
+                ordem = str(item.get("Ordem", ""))
+                produto = str(item.get("Produto", ""))
+                status_original = str(item.get("Status", ""))
+                status_limpo = limpar_status(status_original)
+
                 if not mostrar_todas and data != data_sel and not tem_ensacado(item):
                     continue
 
-                ordem = item.get("Ordem", "")
-                produto = item.get("Produto", "")
-                status_original = item.get("Status", "")
-                status_limpo = limpar_status(status_original)
+                if semanas_sel and get_semana(item.get("Data", "")) not in semanas_sel:
+                    continue
 
                 if status_sel != "Todos" and status_limpo != status_sel:
                     continue
@@ -500,11 +505,12 @@ for linha, datas in estrutura.items():
         bloco += f"<h3>📅 {data}</h3><div class='cards'>"
 
         for item in itens_filtrados:
-            produto = item.get("Produto", "")
-            ordem = item.get("Ordem", "")
-            status_original = item.get("Status", "")
-            qtde_total = item.get("Qtde Total", "0")
-            qtde_pendente = item.get("Qtde Pendente", "0")
+            produto = str(item.get("Produto", ""))
+            ordem = str(item.get("Ordem", ""))
+            turno_item = str(item.get("Turno", "-"))
+            status_original = str(item.get("Status", ""))
+            qtde_total = str(item.get("Qtde Total", "0"))
+            qtde_pendente = str(item.get("Qtde Pendente", "0"))
 
             total = to_float(qtde_total)
             pendente = to_float(qtde_pendente)
@@ -520,31 +526,31 @@ for linha, datas in estrutura.items():
             else:
                 classe = "pendente"
 
+            produto_js = json.dumps(produto)
+            ordem_js = json.dumps(ordem)
+            turno_js = json.dumps(turno_item)
+            qtde_total_js = json.dumps(qtde_total)
+            qtde_pendente_js = json.dumps(qtde_pendente)
+            status_js = json.dumps(status_original)
+            data_js = json.dumps(data)
+            linha_js = json.dumps(linha)
+
             bloco += f"""
             <div class='card {classe}'>
                 <b>{produto}</b><br>
                 Ordem: {ordem}<br>
-                Turno: {item.get("Turno","-")}<br>
+                Turno: {turno_item}<br>
                 Qtde: {qtde_total}<br>
                 Pendente: {qtde_pendente}<br>
                 Status: {status_original}<br>
 
-                <button onclick="exportarCard(
-                    '{produto}',
-                    '{ordem}',
-                    '{item.get("Turno","-")}',
-                    '{qtde_total}',
-                    '{qtde_pendente}',
-                    '{status_original}',
-                    '{data}',
-                    '{linha}'
-                )">📄 Gerar PDF</button>
+                <button onclick='exportarCard({produto_js}, {ordem_js}, {turno_js}, {qtde_total_js}, {qtde_pendente_js}, {status_js}, {data_js}, {linha_js})'>📄 Gerar PDF</button>
 
                 <br><br>
                 <label style="font-size:12px;">📎 Rancho:</label><br>
-                <input type="file" accept="application/pdf" onchange="anexarRancho(this, '{ordem}')" style="font-size:11px;">
+                <input type="file" accept="application/pdf" onchange='anexarRancho(this, {ordem_js})' style="font-size:11px;">
                 <br>
-                <button onclick="verRancho('{ordem}')">👁 Ver Rancho</button>
+                <button onclick='verRancho({ordem_js})'>👁 Ver Rancho</button>
                 <div id="status_{ordem}" style="font-size:11px; margin-top:5px;"></div>
             </div>
             """
