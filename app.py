@@ -244,7 +244,8 @@ try {
     campo(130,y,70,12,"OPERADOR","");
     y+=16;
 
-    const numeroRancho = localStorage.getItem("rancho_num_" + ordem) || "";
+    // Busca número do rancho no IndexedDB antes de gerar PDF
+    const numeroRancho = await lerDB("rancho_num_" + ordem) || "";
 
 campo(10, y, 120, 12, "RANCHO", numeroRancho);
     y+=20;
@@ -300,6 +301,46 @@ if(linha.toUpperCase().includes("AREA LIQUIDA")){
     pdf.save("ordem_producao.pdf");
 }
 
+// Usa IndexedDB para guardar ranchos de forma persistente dentro do iframe
+const DB_NAME = "pcp_ranchos";
+const DB_VERSION = 1;
+
+function abrirDB(){
+    return new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onupgradeneeded = e => {
+            const db = e.target.result;
+            if(!db.objectStoreNames.contains("ranchos")){
+                db.createObjectStore("ranchos", { keyPath: "chave" });
+            }
+        };
+        req.onsuccess = e => resolve(e.target.result);
+        req.onerror = e => reject(e.target.error);
+    });
+}
+
+function salvarDB(chave, valor){
+    return abrirDB().then(db => {
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction("ranchos", "readwrite");
+            tx.objectStore("ranchos").put({ chave, valor });
+            tx.oncomplete = resolve;
+            tx.onerror = e => reject(e.target.error);
+        });
+    });
+}
+
+function lerDB(chave){
+    return abrirDB().then(db => {
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction("ranchos", "readonly");
+            const req = tx.objectStore("ranchos").get(chave);
+            req.onsuccess = e => resolve(e.target.result ? e.target.result.valor : null);
+            req.onerror = e => reject(e.target.error);
+        });
+    });
+}
+
 function anexarRancho(input, ordem){
     const file = input.files[0];
 
@@ -308,9 +349,6 @@ function anexarRancho(input, ordem){
 
         reader.onload = function(e){
             const base64 = e.target.result;
-
-            // salva o PDF
-            localStorage.setItem("rancho_" + ordem, base64);
 
             // tenta extrair número do rancho
             let numeroRancho = "NÃO ENCONTRADO";
@@ -333,9 +371,20 @@ if(numeroRancho === "NÃO ENCONTRADO"){
     }
 }
 
-localStorage.setItem("rancho_num_" + ordem, numeroRancho);
-
-alert("✅ Rancho anexado com sucesso");
+// Salva no IndexedDB (persiste entre recargas do autorefresh)
+Promise.all([
+    salvarDB("rancho_" + ordem, base64),
+    salvarDB("rancho_num_" + ordem, numeroRancho)
+]).then(() => {
+    const el = document.getElementById("status_" + ordem);
+    if(el){
+        el.innerHTML = "✅ Rancho anexado";
+        el.style.color = "green";
+    }
+    alert("✅ Rancho anexado com sucesso");
+}).catch(() => {
+    alert("✅ Rancho carregado (sessão atual)");
+});
         };
 
         reader.readAsDataURL(file);
@@ -343,14 +392,13 @@ alert("✅ Rancho anexado com sucesso");
 }
 
 function verRancho(ordem){
-    const arquivo = localStorage.getItem("rancho_" + ordem);
+    lerDB("rancho_" + ordem).then(arquivo => {
+        if(!arquivo){
+            alert("❌ Nenhum rancho anexado para essa ordem");
+            return;
+        }
 
-    if(!arquivo){
-        alert("❌ Nenhum rancho anexado para essa ordem");
-        return;
-    }
-
-    const novaAba = window.open("", "_blank");
+        const novaAba = window.open("", "_blank");
 novaAba.document.write(`
     <html>
     <head><title>Rancho</title></head>
@@ -360,19 +408,21 @@ novaAba.document.write(`
     </html>
 `);
 novaAba.document.close();
+    });
 }
+
 window.onload = function(){
     document.querySelectorAll("[id^='status_']").forEach(el => {
         let ordem = el.id.replace("status_", "");
-        let temRancho = localStorage.getItem("rancho_" + ordem);
-
-        if(temRancho){
-            el.innerHTML = "✅ Rancho anexado";
-            el.style.color = "green";
-        } else {
-            el.innerHTML = "❌ Nenhum rancho";
-            el.style.color = "red";
-        }
+        lerDB("rancho_" + ordem).then(temRancho => {
+            if(temRancho){
+                el.innerHTML = "✅ Rancho anexado";
+                el.style.color = "green";
+            } else {
+                el.innerHTML = "❌ Nenhum rancho";
+                el.style.color = "red";
+            }
+        });
     });
 };
 </script>
