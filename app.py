@@ -465,7 +465,7 @@ for turno, itens in turnos.items():
 
         status_limpo = limpar_status(status_original)
 
-        # 🔹 ENSACADO (NOVO)
+        # 🔹 ENSACADO
         ensacado = (
             item.get("Ensacado") or
             item.get("ENSACADO") or
@@ -475,24 +475,21 @@ for turno, itens in turnos.items():
 
         tem_ensacado = str(ensacado).strip() not in ["", "0", "0,0", "0.0"]
 
-        # 👉 SE TEM ENSACADO → FURA FILTROS
-        if tem_ensacado:
-            itens_filtrados.append(item)
-            continue
+        # 🔹 VALIDA FILTROS
+        passa_filtros = True
 
-        # 🔹 FILTRO DE STATUS
         if status_sel != "Todos" and status_limpo != status_sel:
-            continue
+            passa_filtros = False
 
-        # 🔹 FILTRO ORDEM
         if ordem_pesquisa and ordem_pesquisa not in ordem:
-            continue
+            passa_filtros = False
 
-        # 🔹 FILTRO PRODUTO
         if produto_pesquisa and produto_pesquisa.lower() not in produto.lower():
-            continue
+            passa_filtros = False
 
-        itens_filtrados.append(item)
+        # 👉 REGRA FINAL
+        if passa_filtros or tem_ensacado:
+            itens_filtrados.append(item)
 
         # ✅ posição correta
         if not itens_filtrados:
