@@ -481,11 +481,8 @@ for linha, datas in estrutura.items():
     if produto_pesquisa and produto_pesquisa.lower() not in produto.lower():
         continue
 
-    # 🔹 REGRA FINAL:
-    # mostra se passar nos filtros OU tiver ensacado preenchido
-    if status_sel == "Todos" and not tem_ensacado:
-        itens_filtrados.append(item)
-    elif tem_ensacado:
+    # 🔹 GARANTE QUE ENSACADO APAREÇA
+    if tem_ensacado:
         itens_filtrados.append(item)
     else:
         itens_filtrados.append(item)
