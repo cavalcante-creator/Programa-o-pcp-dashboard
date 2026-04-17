@@ -452,39 +452,39 @@ for linha, datas in estrutura.items():
 
         itens_filtrados = []
 
-        for turno, itens in turnos.items():
-
-            # 🔹 FILTRO DE TURNO
-            if turno_sel != "Todos" and turno != turno_sel:
-                continue
-
-           for item in itens:
-    ordem = item.get("Ordem", "")
-    produto = item.get("Produto", "")
-    status_original = item.get("Status", "")
-
-    status_limpo = limpar_status(status_original)
-
-    # 🔹 ENSACADO (COLUNA J)
-    ensacado = item.get("Ensacado", "")
-    tem_ensacado = str(ensacado).strip() not in ["", "0", "0,0", "0.0"]
-
-    # 👉 SE TEM ENSACADO → MOSTRA DIRETO (fura filtros)
-    if tem_ensacado:
-        itens_filtrados.append(item)
-        continue
-
-    # 🔹 FILTROS NORMAIS
-    if status_sel != "Todos" and status_limpo != status_sel:
-        continue
-
-    if ordem_pesquisa and ordem_pesquisa not in ordem:
-        continue
-
-    if produto_pesquisa and produto_pesquisa.lower() not in produto.lower():
-        continue
-
-    itens_filtrados.append(item)
+                    for turno, itens in turnos.items():
+                
+                        # 🔹 FILTRO DE TURNO
+                        if turno_sel != "Todos" and turno != turno_sel:
+                            continue
+                
+                       for item in itens:
+                ordem = item.get("Ordem", "")
+                produto = item.get("Produto", "")
+                status_original = item.get("Status", "")
+                
+                status_limpo = limpar_status(status_original)
+                
+                # 🔹 ENSACADO (COLUNA J)
+                ensacado = item.get("Ensacado", "")
+                tem_ensacado = str(ensacado).strip() not in ["", "0", "0,0", "0.0"]
+                
+                # 👉 SE TEM ENSACADO → MOSTRA DIRETO (fura filtros)
+                if tem_ensacado:
+                    itens_filtrados.append(item)
+                    continue
+                
+                # 🔹 FILTROS NORMAIS
+                if status_sel != "Todos" and status_limpo != status_sel:
+                    continue
+                
+                if ordem_pesquisa and ordem_pesquisa not in ordem:
+                    continue
+                
+                if produto_pesquisa and produto_pesquisa.lower() not in produto.lower():
+                    continue
+                
+                itens_filtrados.append(item)
 
         # ✅ posição correta
         if not itens_filtrados:
