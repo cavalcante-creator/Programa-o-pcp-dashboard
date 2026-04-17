@@ -6,32 +6,59 @@ from io import StringIO
 from datetime import datetime, date
 
 st_autorefresh(interval=60000)
+
 st.set_page_config(layout="wide")
 
-st.markdown("""
-<style>
-.block-container { padding-top: 1.5rem; }
-.header { display: flex; align-items: center; justify-content: space-between; }
-.logo { width: 200px; margin-top: 10px; }
-.titulo { flex-grow: 1; text-align: center; font-size: 26px; font-weight: 600; }
-.vazio { width: 140px; }
-</style>
-""", unsafe_allow_html=True)
+st.markdown(
+    """
+    <style>
+    .block-container {
+        padding-top: 1.5rem;
+    }
+    .header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .logo {
+        width: 200px;
+        margin-top: 10px;
+    }
+    .titulo {
+        flex-grow: 1;
+        text-align: center;
+        font-size: 26px;
+        font-weight: 600;
+    }
+    .vazio {
+        width: 140px;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
-st.markdown("""
-<div class="header">
-<img class="logo" src="https://raw.githubusercontent.com/cavalcante-creator/Programa-o-pcp-dashboard/main/COL_LOGO_8.png">
-<div class="titulo">Planejamento PCP</div>
-<div class="vazio"></div>
-</div>
-""", unsafe_allow_html=True)
+st.markdown(
+    """
+    <div class="header">
+        <img class="logo" src="https://raw.githubusercontent.com/cavalcante-creator/Programa-o-pcp-dashboard/main/COL_LOGO_8.png">
+        <div class="titulo">Planejamento PCP</div>
+        <div class="vazio"></div>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 sheet_id = "1eQHvLVw-WLsA4UruaM6GThcy0dgb5ONNAn8AZ_KwBuU"
 
 abas = [
-    "BASE_LINHA_1","BASE_LINHA_2","BASE_LINHA_3",
+    "BASE_LINHA_1",
+    "BASE_LINHA_2",
+    "BASE_LINHA_3",
     "BASE_AREA_LIQUIDA",
-    "BASE_REJUNTE_MAQUINA_1","BASE_REJUNTE_MAQUINA_2","BASE_REJUNTE_MAQUINA_3"
+    "BASE_REJUNTE_MAQUINA_1",
+    "BASE_REJUNTE_MAQUINA_2",
+    "BASE_REJUNTE_MAQUINA_3"
 ]
 
 dados_total = []
@@ -41,12 +68,15 @@ for aba in abas:
     response = requests.get(url)
     f = StringIO(response.text)
     reader = csv.DictReader(f)
+
     for linha in reader:
         linha["Linha"] = aba
         dados_total.append(linha)
 
+
 def nome_linha(linha):
     return linha.replace("BASE_", "").replace("_", " ")
+
 
 def get_semana(data_str):
     try:
@@ -56,20 +86,30 @@ def get_semana(data_str):
     except:
         return ""
 
+
 def to_float(valor):
     try:
         return float(str(valor).replace(".", "").replace(",", "."))
     except:
         return 0
 
+
 def limpar_status(s):
     if not s:
         return ""
     s = str(s).strip().upper()
-    if "AGUARDANDO" in s: return "AGUARDANDO"
-    if "PRODUÇÃO" in s: return "EM PRODUÇÃO"
-    if "LIBERADA" in s: return "LIBERADA"
+    if "AGUARDANDO" in s:
+        return "AGUARDANDO"
+    if "PRODUÇÃO" in s:
+        return "EM PRODUÇÃO"
+    if "LIBERADA" in s:
+        return "LIBERADA"
     return s
+
+
+def tem_ensacado(item):
+    return str(item.get("Ensacado", "")).strip() != ""
+
 
 estrutura = {}
 
@@ -121,17 +161,21 @@ html = """
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <style>
-body { font-family: 'Segoe UI'; background: #f5f7fa; margin: 20px; }
-
+body {
+    font-family: 'Segoe UI';
+    background: #f5f7fa;
+    margin: 20px;
+}
 .linha h2 {
     background: #2c3e50;
     color: white;
     padding: 10px;
     border-radius: 8px;
 }
-
-.cards { display: flex; flex-wrap: wrap; }
-
+.cards {
+    display: flex;
+    flex-wrap: wrap;
+}
 .card {
     width: 260px;
     padding: 12px;
@@ -141,13 +185,26 @@ body { font-family: 'Segoe UI'; background: #f5f7fa; margin: 20px; }
     box-shadow: 0px 4px 12px rgba(0,0,0,0.06);
     border-left: 5px solid transparent;
 }
-
-.producao { border-left: 5px solid #a9cce3; background: #f4f9fd; }
-.pendente { border-left: 5px solid #f5b7b1; background: #fdf2f2; }
-.finalizado { border-left: 5px solid #a9dfbf; background: #f3fbf6; }
-.reprogramado { border-left: 5px solid #d7bde2; background: #f8f4fb; }
-.liberada { border-left: 5px solid #f9e79f; background: #fef9e7; }
-
+.producao {
+    border-left: 5px solid #a9cce3;
+    background: #f4f9fd;
+}
+.pendente {
+    border-left: 5px solid #f5b7b1;
+    background: #fdf2f2;
+}
+.finalizado {
+    border-left: 5px solid #a9dfbf;
+    background: #f3fbf6;
+}
+.reprogramado {
+    border-left: 5px solid #d7bde2;
+    background: #f8f4fb;
+}
+.liberada {
+    border-left: 5px solid #f9e79f;
+    background: #fef9e7;
+}
 button {
     margin-top: 8px;
     padding: 6px 10px;
@@ -164,11 +221,9 @@ async function exportarPagina(){
     const elemento = document.getElementById("conteudo");
     const canvas = await html2canvas(elemento, { scale: 2 });
     const imgData = canvas.toDataURL("image/png");
-
     const pdf = new jsPDF('p','mm','a4');
     const largura = 210;
     const altura = (canvas.height * largura) / canvas.width;
-
     pdf.addImage(imgData, 'PNG', 0, 0, largura, altura);
     pdf.save("pagina_completa.pdf");
 }
@@ -176,47 +231,34 @@ async function exportarPagina(){
 async function exportarCard(produto, ordem, turno, qtde, pendente, status, data, linha){
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF('p','mm','a4');
-
     let y = 10;
-
     const logoUrl = "https://raw.githubusercontent.com/cavalcante-creator/Programa-o-pcp-dashboard/main/COL_LOGO_8.png";
 
-try {
-    const img = await fetch(logoUrl);
-    const blob = await img.blob();
-
-    const reader = new FileReader();
-
-    await new Promise(resolve => {
-        reader.onloadend = resolve;
-        reader.readAsDataURL(blob);
-    });
-
-    const base64 = reader.result;
-    const props = pdf.getImageProperties(base64);
-
-    const largura = 30;
-    const altura = (props.height * largura) / props.width;
-
-    pdf.addImage(base64, 'PNG', 10, y, largura, altura);
-
-} catch(e){}
-
-        
+    try {
+        const img = await fetch(logoUrl);
+        const blob = await img.blob();
+        const reader = new FileReader();
+        await new Promise(resolve => {
+            reader.onloadend = resolve;
+            reader.readAsDataURL(blob);
+        });
+        const base64 = reader.result;
+        const props = pdf.getImageProperties(base64);
+        const largura = 30;
+        const altura = (props.height * largura) / props.width;
+        pdf.addImage(base64, 'PNG', 10, y, largura, altura);
+    } catch(e) {}
 
     pdf.setFont("helvetica","bold");
     pdf.setFontSize(16);
     pdf.text("ORDEM DE PRODUÇÃO", 70, y + 10);
-
     y += 20;
 
     pdf.setFillColor(44,62,80);
     pdf.rect(10, y, 190, 8, 'F');
-
     pdf.setTextColor(255,255,255);
     pdf.text("DATA: " + data, 15, y + 5.5);
     pdf.text("LINHA: " + linha, 120, y + 5.5);
-
     pdf.setTextColor(0,0,0);
     y += 18;
 
@@ -244,24 +286,21 @@ try {
     campo(130,y,70,12,"OPERADOR","");
     y+=16;
 
-    // Busca número do rancho no IndexedDB antes de gerar PDF
     const numeroRancho = await lerDB("rancho_num_" + ordem) || "";
-
-campo(10, y, 120, 12, "RANCHO", numeroRancho);
+    campo(10, y, 120, 12, "RANCHO", numeroRancho);
     y+=20;
 
     let colunas;
+    if(linha.toUpperCase().includes("AREA LIQUIDA")){
+        colunas = ["HORA INICIO","HORA FIM","N PALLETS","FD","RASGADOS","PARADAS"];
+    } else {
+        colunas = ["HORA INICIO","HORA FIM","N PALLETS","SACOS (UN)","RASGADOS","PARADAS"];
+    }
 
-if(linha.toUpperCase().includes("AREA LIQUIDA")){
-    colunas = ["HORA INICIO","HORA FIM","N PALLETS","FD","RASGADOS","PARADAS"];
-} else {
-    colunas = ["HORA INICIO","HORA FIM","N PALLETS","SACOS (UN)","RASGADOS","PARADAS"];
-}
     let larguraTabela = 190/colunas.length;
     let alturaLinha = 8;
 
     pdf.setFont("helvetica","bold");
-
     colunas.forEach((c,i)=>{
         pdf.rect(10+i*larguraTabela,y,larguraTabela,alturaLinha);
         pdf.text(c,10+i*larguraTabela+1,y+5);
@@ -271,7 +310,6 @@ if(linha.toUpperCase().includes("AREA LIQUIDA")){
     y+=alturaLinha;
 
     const limite = 210;
-
     while(y < limite){
         for(let j=0;j<colunas.length;j++){
             pdf.rect(10+j*larguraTabela,y,larguraTabela,alturaLinha);
@@ -282,18 +320,14 @@ if(linha.toUpperCase().includes("AREA LIQUIDA")){
     y += 5;
     pdf.setFont("helvetica","bold");
     pdf.text("OBSERVAÇÕES:", 10, y);
-
     y += 3;
     pdf.rect(10, y, 190, 30);
 
     y += 45;
-
     pdf.setFont("helvetica","bold");
     pdf.text("ASSINATURA DO OPERADOR:", 10, y);
-
     y += 10;
     pdf.line(10, y, 100, y);
-
     pdf.setFont("helvetica","normal");
     pdf.setFontSize(8);
     pdf.text("Nome / Assinatura", 10, y + 4);
@@ -301,7 +335,6 @@ if(linha.toUpperCase().includes("AREA LIQUIDA")){
     pdf.save("ordem_producao.pdf");
 }
 
-// Usa IndexedDB para guardar ranchos de forma persistente dentro do iframe
 const DB_NAME = "pcp_ranchos";
 const DB_VERSION = 1;
 
@@ -343,50 +376,41 @@ function lerDB(chave){
 
 function anexarRancho(input, ordem){
     const file = input.files[0];
-
     if(file){
         const reader = new FileReader();
-
         reader.onload = function(e){
             const base64 = e.target.result;
 
-            // tenta extrair número do rancho
             let numeroRancho = "NÃO ENCONTRADO";
+            try {
+                let texto = atob(base64.split(",")[1]);
+                let match = texto.match(/rancho\\s*\\(?\\s*(\\d+)/i);
+                if(match){
+                    numeroRancho = match[1];
+                }
+            } catch(e) {}
 
-try {
-    let texto = atob(base64.split(",")[1]);
-    let match = texto.match(/rancho\s*\(?\s*(\d+)/i);
+            if(numeroRancho === "NÃO ENCONTRADO"){
+                let manual = prompt("Número do rancho não identificado automaticamente. Digite manualmente:");
+                if(manual){
+                    numeroRancho = manual;
+                }
+            }
 
-    if(match){
-        numeroRancho = match[1];
-    }
-} catch(e) {}
-
-// 👉 se não encontrou, deixa usuário informar (sem obrigar)
-if(numeroRancho === "NÃO ENCONTRADO"){
-    let manual = prompt("Número do rancho não identificado automaticamente. Digite manualmente:");
-
-    if(manual){
-        numeroRancho = manual;
-    }
-}
-
-// Salva no IndexedDB (persiste entre recargas do autorefresh)
-Promise.all([
-    salvarDB("rancho_" + ordem, base64),
-    salvarDB("rancho_num_" + ordem, numeroRancho)
-]).then(() => {
-    const el = document.getElementById("status_" + ordem);
-    if(el){
-        el.innerHTML = "✅ Rancho anexado";
-        el.style.color = "green";
-    }
-    alert("✅ Rancho anexado com sucesso");
-}).catch(() => {
-    alert("✅ Rancho carregado (sessão atual)");
-});
+            Promise.all([
+                salvarDB("rancho_" + ordem, base64),
+                salvarDB("rancho_num_" + ordem, numeroRancho)
+            ]).then(() => {
+                const el = document.getElementById("status_" + ordem);
+                if(el){
+                    el.innerHTML = "✅ Rancho anexado";
+                    el.style.color = "green";
+                }
+                alert("✅ Rancho anexado com sucesso");
+            }).catch(() => {
+                alert("✅ Rancho carregado (sessão atual)");
+            });
         };
-
         reader.readAsDataURL(file);
     }
 }
@@ -397,17 +421,16 @@ function verRancho(ordem){
             alert("❌ Nenhum rancho anexado para essa ordem");
             return;
         }
-
         const novaAba = window.open("", "_blank");
-novaAba.document.write(`
-    <html>
-    <head><title>Rancho</title></head>
-    <body style="margin:0">
-        <iframe src="${arquivo}" width="100%" height="100%"></iframe>
-    </body>
-    </html>
-`);
-novaAba.document.close();
+        novaAba.document.write(`
+            <html>
+            <head><title>Rancho</title></head>
+            <body style="margin:0">
+                <iframe src="${arquivo}" width="100%" height="100%"></iframe>
+            </body>
+            </html>
+        `);
+        novaAba.document.close();
     });
 }
 
@@ -429,7 +452,6 @@ window.onload = function(){
 </head>
 
 <body>
-
 <div style="margin-bottom:15px;">
     <button onclick="exportarPagina()">📥 Baixar Página Completa</button>
 </div>
@@ -438,7 +460,6 @@ window.onload = function(){
 """
 
 for linha, datas in estrutura.items():
-
     if linha_sel != "Todas" and linha != linha_sel:
         continue
 
@@ -446,57 +467,36 @@ for linha, datas in estrutura.items():
     tem_linha = False
 
     for data, turnos in datas.items():
-
-        if not mostrar_todas and data != data_sel:
-            continue
-
         itens_filtrados = []
 
-for turno, itens in turnos.items():
+        for turno, itens in turnos.items():
+            if turno_sel != "Todos" and turno != turno_sel:
+                continue
 
-    # 🔹 FILTRO DE TURNO
-    if turno_sel != "Todos" and turno != turno_sel:
-        continue
+            for item in itens:
+                if not mostrar_todas and data != data_sel and not tem_ensacado(item):
+                    continue
 
-    for item in itens:
-        ordem = item.get("Ordem", "")
-        produto = item.get("Produto", "")
-        status_original = item.get("Status", "")
+                ordem = item.get("Ordem", "")
+                produto = item.get("Produto", "")
+                status_original = item.get("Status", "")
+                status_limpo = limpar_status(status_original)
 
-        status_limpo = limpar_status(status_original)
+                if status_sel != "Todos" and status_limpo != status_sel:
+                    continue
 
-        # 🔹 ENSACADO
-        ensacado = (
-            item.get("Ensacado") or
-            item.get("ENSACADO") or
-            item.get("Ensacado ") or
-            ""
-        )
+                if ordem_pesquisa and ordem_pesquisa not in ordem:
+                    continue
 
-        tem_ensacado = str(ensacado).strip() not in ["", "0", "0,0", "0.0"]
+                if produto_pesquisa and produto_pesquisa.lower() not in produto.lower():
+                    continue
 
-        # 🔹 VALIDA FILTROS
-        passa_filtros = True
+                itens_filtrados.append(item)
 
-        if status_sel != "Todos" and status_limpo != status_sel:
-            passa_filtros = False
-
-        if ordem_pesquisa and ordem_pesquisa not in ordem:
-            passa_filtros = False
-
-        if produto_pesquisa and produto_pesquisa.lower() not in produto.lower():
-            passa_filtros = False
-
-        # 👉 REGRA FINAL
-        if passa_filtros or tem_ensacado:
-            itens_filtrados.append(item)
-
-        # ✅ posição correta
         if not itens_filtrados:
             continue
 
         tem_linha = True
-
         bloco += f"<h3>📅 {data}</h3><div class='cards'>"
 
         for item in itens_filtrados:
@@ -522,33 +522,30 @@ for turno, itens in turnos.items():
 
             bloco += f"""
             <div class='card {classe}'>
-            <b>{produto}</b><br>
-            Ordem: {ordem}<br>
-            Turno: {item.get("Turno","-")}<br>
-            Qtde: {qtde_total}<br>
-            Pendente: {qtde_pendente}<br>
-            Status: {status_original}<br>
+                <b>{produto}</b><br>
+                Ordem: {ordem}<br>
+                Turno: {item.get("Turno","-")}<br>
+                Qtde: {qtde_total}<br>
+                Pendente: {qtde_pendente}<br>
+                Status: {status_original}<br>
 
-            <button onclick="exportarCard(
-                '{produto}',
-                '{ordem}',
-                '{item.get("Turno","-")}',
-                '{qtde_total}',
-                '{qtde_pendente}',
-                '{status_original}',
-                '{data}',
-                '{linha}'
-            )">📄 Gerar PDF</button>
+                <button onclick="exportarCard(
+                    '{produto}',
+                    '{ordem}',
+                    '{item.get("Turno","-")}',
+                    '{qtde_total}',
+                    '{qtde_pendente}',
+                    '{status_original}',
+                    '{data}',
+                    '{linha}'
+                )">📄 Gerar PDF</button>
 
-            <br><br>
-
-            <label style="font-size:12px;">📎 Rancho:</label><br>
-            <input type="file" accept="application/pdf"
-            onchange="anexarRancho(this, '{ordem}')"
-            style="font-size:11px;">
-            <br>
-            <button onclick="verRancho('{ordem}')">👁 Ver Rancho</button>
-            <div id="status_{ordem}" style="font-size:11px; margin-top:5px;"></div>
+                <br><br>
+                <label style="font-size:12px;">📎 Rancho:</label><br>
+                <input type="file" accept="application/pdf" onchange="anexarRancho(this, '{ordem}')" style="font-size:11px;">
+                <br>
+                <button onclick="verRancho('{ordem}')">👁 Ver Rancho</button>
+                <div id="status_{ordem}" style="font-size:11px; margin-top:5px;"></div>
             </div>
             """
 
@@ -557,6 +554,11 @@ for turno, itens in turnos.items():
 
     if tem_linha:
         html += bloco
-html += "</div></body></html>"
+
+html += """
+</div>
+</body>
+</html>
+"""
 
 st.components.v1.html(html, height=900, scrolling=True)
