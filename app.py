@@ -29,6 +29,10 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+# ─── ESCAPE SEGURO para valores dentro do HTML/JS ─────────────────────
+def esc(valor):
+    return str(valor).replace("\\", "\\\\").replace("'", "\\'").replace('"', '\\"').replace("\n", " ").replace("\r", "")
+
 # ─── CARREGA RANCHOS DO GOOGLE SHEETS ─────────────────────────────────
 @st.cache_data(ttl=60)
 def carregar_ranchos():
@@ -131,9 +135,9 @@ data_sel = data_input.strftime("%d/%m/%Y")
 # ─── JSON DOS RANCHOS PARA O JS ────────────────────────────────────────
 ranchos_meta_json = json.dumps({k: {"numero": v.get("numero",""), "nome": v.get("nome","")} for k, v in ranchos_atuais.items()})
 ranchos_b64_json  = json.dumps({k: v.get("base64","") for k, v in ranchos_atuais.items()})
-apps_script_url   = APPS_SCRIPT_URL
 
-html = f"""
+# ─── HTML BASE (sem f-string para o bloco JS) ─────────────────────────
+html_head = """
 <html>
 <head>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -141,18 +145,18 @@ html = f"""
 <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 
 <style>
-body {{ font-family: 'Segoe UI'; background: #f5f7fa; margin: 20px; }}
+body { font-family: 'Segoe UI'; background: #f5f7fa; margin: 20px; }
 
-.linha h2 {{
+.linha h2 {
     background: #2c3e50;
     color: white;
     padding: 10px;
     border-radius: 8px;
-}}
+}
 
-.cards {{ display: flex; flex-wrap: wrap; }}
+.cards { display: flex; flex-wrap: wrap; }
 
-.card {{
+.card {
     width: 260px;
     padding: 12px;
     margin: 8px;
@@ -160,10 +164,382 @@ body {{ font-family: 'Segoe UI'; background: #f5f7fa; margin: 20px; }}
     background: white;
     box-shadow: 0px 4px 12px rgba(0,0,0,0.06);
     border-left: 5px solid transparent;
-}}
+}
 
-.producao {{ border-left: 5px solid #a9cce3; background: #f4f9fd; }}
-.pendente {{ border-left: 5px solid #f5b7b1; background: #fdf2f2; }}
-.finalizado {{ border-left: 5px solid #a9dfbf; background: #f3fbf6; }}
-.reprogramado {{ border-left: 5px solid #d7bde2; background: #f8f4fb; }}
-.liberada {{ border-left: 5px solid #f
+.producao { border-left: 5px solid #a9cce3; background: #f4f9fd; }
+.pendente { border-left: 5px solid #f5b7b1; background: #fdf2f2; }
+.finalizado { border-left: 5px solid #a9dfbf; background: #f3fbf6; }
+.reprogramado { border-left: 5px solid #d7bde2; background: #f8f4fb; }
+.liberada { border-left: 5px solid #f9e79f; background: #fef9e7; }
+
+button {
+    margin-top: 8px;
+    padding: 6px 10px;
+    border: none;
+    border-radius: 6px;
+    background: #2c3e50;
+    color: white;
+    cursor: pointer;
+}
+
+.upload-label {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    background: #5d6d7e;
+    color: white;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.upload-label input { display: none; }
+</style>
+
+<script>
+const RANCHOS_META = __RANCHOS_META__;
+const RANCHOS_B64  = __RANCHOS_B64__;
+const APPS_SCRIPT_URL = "__APPS_SCRIPT_URL__";
+
+async function exportarPagina(){
+    const { jsPDF } = window.jspdf;
+    const elemento = document.getElementById("conteudo");
+    const canvas = await html2canvas(elemento, { scale: 2 });
+    const imgData = canvas.toDataURL("image/png");
+    const pdf = new jsPDF('p','mm','a4');
+    const largura = 210;
+    const altura = (canvas.height * largura) / canvas.width;
+    pdf.addImage(imgData, 'PNG', 0, 0, largura, altura);
+    pdf.save("pagina_completa.pdf");
+}
+
+async function exportarCard(produto, ordem, turno, qtde, pendente, status, data, linha){
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p','mm','a4');
+    let y = 10;
+
+    const logoUrl = "https://raw.githubusercontent.com/cavalcante-creator/Programa-o-pcp-dashboard/main/COL_LOGO_8.png";
+    try {
+        const img = await fetch(logoUrl);
+        const blob = await img.blob();
+        const reader = new FileReader();
+        await new Promise(resolve => { reader.onloadend = resolve; reader.readAsDataURL(blob); });
+        const base64 = reader.result;
+        const props = pdf.getImageProperties(base64);
+        const larg = 30;
+        const alt = (props.height * larg) / props.width;
+        pdf.addImage(base64, 'PNG', 10, y, larg, alt);
+    } catch(e){}
+
+    pdf.setFont("helvetica","bold");
+    pdf.setFontSize(16);
+    pdf.text("ORDEM DE PRODUÇÃO", 70, y + 10);
+    y += 20;
+
+    pdf.setFillColor(44,62,80);
+    pdf.rect(10, y, 190, 8, 'F');
+    pdf.setTextColor(255,255,255);
+    pdf.text("DATA: " + data, 15, y + 5.5);
+    pdf.text("LINHA: " + linha, 120, y + 5.5);
+    pdf.setTextColor(0,0,0);
+    y += 18;
+
+    function campo(x,y,w,h,t,v){
+        pdf.setFontSize(8); pdf.setFont("helvetica","bold");
+        pdf.text(t,x,y-1); pdf.rect(x,y,w,h);
+        pdf.setFont("helvetica","normal"); pdf.setFontSize(10);
+        let linhas = pdf.splitTextToSize(String(v), w - 4);
+        pdf.text(linhas, x+2, y+6);
+    }
+
+    campo(10,y,120,12,"PRODUTO",produto);
+    campo(130,y,70,12,"ORDEM",ordem);
+    y+=16;
+    campo(10,y,60,12,"TURNO",turno);
+    campo(70,y,60,12,"QUANTIDADE PROGRAMADA",qtde);
+    campo(130,y,70,12,"QUANTIDADE PENDENTE",pendente);
+    y+=16;
+    campo(10,y,120,12,"STATUS",status);
+    campo(130,y,70,12,"OPERADOR","");
+    y+=16;
+
+    const meta = RANCHOS_META[ordem];
+    const numeroRancho = meta ? meta.numero : "";
+    campo(10, y, 120, 12, "RANCHO", numeroRancho);
+    y+=20;
+
+    let colunas;
+    if(linha.toUpperCase().includes("AREA LIQUIDA")){
+        colunas = ["HORA INICIO","HORA FIM","N PALLETS","FD","RASGADOS","PARADAS"];
+    } else {
+        colunas = ["HORA INICIO","HORA FIM","N PALLETS","SACOS (UN)","RASGADOS","PARADAS"];
+    }
+
+    let larguraTabela = 190/colunas.length;
+    let alturaLinha = 8;
+    pdf.setFont("helvetica","bold");
+    colunas.forEach((c,i)=>{
+        pdf.rect(10+i*larguraTabela,y,larguraTabela,alturaLinha);
+        pdf.text(c,10+i*larguraTabela+1,y+5);
+    });
+    pdf.setFont("helvetica","normal");
+    y+=alturaLinha;
+    const limite = 210;
+    while(y < limite){
+        for(let j=0;j<colunas.length;j++){
+            pdf.rect(10+j*larguraTabela,y,larguraTabela,alturaLinha);
+        }
+        y+=alturaLinha;
+    }
+
+    y += 5;
+    pdf.setFont("helvetica","bold");
+    pdf.text("OBSERVAÇÕES:", 10, y);
+    y += 3;
+    pdf.rect(10, y, 190, 30);
+    y += 45;
+    pdf.setFont("helvetica","bold");
+    pdf.text("ASSINATURA DO OPERADOR:", 10, y);
+    y += 10;
+    pdf.line(10, y, 100, y);
+    pdf.setFont("helvetica","normal");
+    pdf.setFontSize(8);
+    pdf.text("Nome / Assinatura", 10, y + 4);
+
+    // ─── MESCLA O PDF DO RANCHO JUNTO usando pdf-lib ───────────────────
+    const b64Rancho = RANCHOS_B64[ordem];
+    if(b64Rancho){
+        try {
+            const { PDFDocument } = PDFLib;
+
+            // Converte o jsPDF atual para bytes
+            const pdfPrincipalBytes = pdf.output('arraybuffer');
+
+            // Converte base64 do rancho para bytes
+            const binaryStr = atob(b64Rancho);
+            const ranchoBytes = new Uint8Array(binaryStr.length);
+            for(let i = 0; i < binaryStr.length; i++){
+                ranchoBytes[i] = binaryStr.charCodeAt(i);
+            }
+
+            // Mescla com pdf-lib
+            const docFinal   = await PDFDocument.load(pdfPrincipalBytes);
+            const docRancho  = await PDFDocument.load(ranchoBytes);
+            const paginas    = await docFinal.copyPages(docRancho, docRancho.getPageIndices());
+            paginas.forEach(p => docFinal.addPage(p));
+
+            const bytesFinais = await docFinal.save();
+            const blob = new Blob([bytesFinais], { type: 'application/pdf' });
+            const url  = URL.createObjectURL(blob);
+            const a    = document.createElement('a');
+            a.href     = url;
+            a.download = 'ordem_producao.pdf';
+            a.click();
+            URL.revokeObjectURL(url);
+            return;
+        } catch(e){
+            console.warn("Erro ao mesclar rancho:", e);
+        }
+    }
+
+    // Sem rancho: baixa só a ordem
+    pdf.save("ordem_producao.pdf");
+}
+
+function verRancho(ordem){
+    const b64 = RANCHOS_B64[ordem];
+    if(!b64){
+        alert("❌ Nenhum rancho anexado para essa ordem");
+        return;
+    }
+    const dataUrl = "data:application/pdf;base64," + b64;
+    const novaAba = window.open("", "_blank");
+    novaAba.document.write('<html><head><title>Rancho</title></head><body style="margin:0"><iframe src="' + dataUrl + '" width="100%" height="100%" style="border:none;"></iframe></body></html>');
+    novaAba.document.close();
+}
+
+function anexarRancho(input, ordem){
+    const file = input.files[0];
+    if(!file) return;
+
+    const statusEl = document.getElementById("status_" + ordem);
+    if(statusEl){ statusEl.innerHTML = "⏳ Enviando..."; statusEl.style.color = "orange"; }
+
+    const reader = new FileReader();
+    reader.onload = function(e){
+        const b64 = e.target.result.split(",")[1];
+
+        let numeroRancho = "";
+        try {
+            const decoded = atob(b64);
+            const match = decoded.match(/rancho\s*\(?\s*(\d+)/i);
+            if(match) numeroRancho = match[1];
+        } catch(err){}
+
+        if(!numeroRancho){
+            numeroRancho = prompt("Número do rancho não identificado. Digite manualmente:") || "Não informado";
+        }
+
+        // Salva no Google Sheets via Apps Script
+        const url = new URL(APPS_SCRIPT_URL);
+        url.searchParams.set("acao",   "salvar");
+        url.searchParams.set("ordem",  ordem);
+        url.searchParams.set("numero", numeroRancho);
+        url.searchParams.set("nome",   file.name);
+        url.searchParams.set("b64",    b64);
+
+        fetch(url.toString(), { mode: "no-cors" }).then(() => {
+            RANCHOS_META[ordem] = { numero: numeroRancho, nome: file.name };
+            RANCHOS_B64[ordem]  = b64;
+            if(statusEl){
+                statusEl.innerHTML = "✅ Rancho: " + numeroRancho;
+                statusEl.style.color = "green";
+            }
+        }).catch(() => {
+            RANCHOS_META[ordem] = { numero: numeroRancho, nome: file.name };
+            RANCHOS_B64[ordem]  = b64;
+            if(statusEl){
+                statusEl.innerHTML = "✅ Rancho salvo (recarregue para confirmar)";
+                statusEl.style.color = "green";
+            }
+        });
+    };
+    reader.readAsDataURL(file);
+}
+
+window.onload = function(){
+    document.querySelectorAll("[id^='status_']").forEach(el => {
+        let ordem = el.id.replace("status_", "");
+        if(RANCHOS_META[ordem]){
+            el.innerHTML = "✅ Rancho: " + RANCHOS_META[ordem].numero;
+            el.style.color = "green";
+        } else {
+            el.innerHTML = "❌ Nenhum rancho";
+            el.style.color = "red";
+        }
+    });
+};
+</script>
+</head>
+
+<body>
+<div style="margin-bottom:15px;">
+    <button onclick="exportarPagina()">📥 Baixar Página Completa</button>
+</div>
+<div id="conteudo">
+"""
+
+# Substitui os placeholders com os valores reais (sem f-string no bloco JS)
+html_head = html_head.replace("__RANCHOS_META__", ranchos_meta_json)
+html_head = html_head.replace("__RANCHOS_B64__",  ranchos_b64_json)
+html_head = html_head.replace("__APPS_SCRIPT_URL__", APPS_SCRIPT_URL)
+
+html = html_head
+
+for linha, datas in estrutura.items():
+
+    if linha_sel != "Todas" and linha != linha_sel:
+        continue
+
+    bloco = "<div class='linha'><h2>" + linha + "</h2>"
+    tem_linha = False
+
+    for data, turnos in datas.items():
+
+        if not mostrar_todas and data != data_sel:
+            continue
+
+        itens_filtrados = []
+
+        for turno, itens in turnos.items():
+
+            if turno_sel != "Todos" and turno != turno_sel:
+                continue
+
+            for item in itens:
+                ordem          = item.get("Ordem", "")
+                produto        = item.get("Produto", "")
+                status_original = item.get("Status", "")
+                status_limpo   = limpar_status(status_original)
+
+                if status_sel != "Todos" and status_limpo != status_sel:
+                    continue
+                if ordem_pesquisa and ordem_pesquisa not in ordem:
+                    continue
+                if produto_pesquisa and produto_pesquisa.lower() not in produto.lower():
+                    continue
+
+                itens_filtrados.append(item)
+
+        if not itens_filtrados:
+            continue
+
+        tem_linha = True
+        bloco += "<h3>📅 " + data + "</h3><div class='cards'>"
+
+        for item in itens_filtrados:
+            produto        = item.get("Produto", "")
+            ordem          = item.get("Ordem", "")
+            status_original = item.get("Status", "")
+            qtde_total     = item.get("Qtde Total", "0")
+            qtde_pendente  = item.get("Qtde Pendente", "0")
+            turno_item     = item.get("Turno", "-")
+
+            total   = to_float(qtde_total)
+            pendente = to_float(qtde_pendente)
+            status_lower = status_original.lower()
+
+            if "liberada" in status_lower:
+                classe = "liberada"
+            elif pendente == 0:
+                classe = "finalizado"
+            elif pendente < total:
+                classe = "producao"
+            else:
+                classe = "pendente"
+
+            tem_rancho = ordem in ranchos_atuais
+            if tem_rancho:
+                status_rancho_html = '<span style="color:green;font-size:11px;">✅ Rancho: ' + esc(ranchos_atuais[ordem].get("numero","")) + '</span>'
+            else:
+                status_rancho_html = '<span style="color:red;font-size:11px;">❌ Nenhum rancho</span>'
+
+            # Escapa todos os valores que vão para dentro do JS
+            p_esc  = esc(produto)
+            o_esc  = esc(ordem)
+            t_esc  = esc(turno_item)
+            qt_esc = esc(qtde_total)
+            qp_esc = esc(qtde_pendente)
+            s_esc  = esc(status_original)
+            d_esc  = esc(data)
+            l_esc  = esc(linha)
+
+            bloco += (
+                "<div class='card " + classe + "'>"
+                "<b>" + produto + "</b><br>"
+                "Ordem: " + ordem + "<br>"
+                "Turno: " + turno_item + "<br>"
+                "Qtde: " + qtde_total + "<br>"
+                "Pendente: " + qtde_pendente + "<br>"
+                "Status: " + status_original + "<br>"
+                "<button onclick=\"exportarCard('"
+                + p_esc + "','" + o_esc + "','" + t_esc + "','"
+                + qt_esc + "','" + qp_esc + "','" + s_esc + "','"
+                + d_esc + "','" + l_esc + "')\">📄 Gerar PDF</button>"
+                "<br>"
+                "<label class='upload-label'>📎 Anexar Rancho"
+                "<input type='file' accept='application/pdf' onchange=\"anexarRancho(this,'" + o_esc + "')\"></label>"
+                " <button onclick=\"verRancho('" + o_esc + "')\">👁 Ver Rancho</button>"
+                "<div id='status_" + o_esc + "' style='font-size:11px;margin-top:4px;'>" + status_rancho_html + "</div>"
+                "</div>"
+            )
+
+        bloco += "</div>"
+    bloco += "</div>"
+
+    if tem_linha:
+        html += bloco
+
+html += "</div></body></html>"
+
+st.components.v1.html(html, height=900, scrolling=True)
