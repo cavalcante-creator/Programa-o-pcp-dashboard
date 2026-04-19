@@ -6,7 +6,7 @@ from io import StringIO
 from datetime import datetime, date
 import json
 
-APPS_SCRIPT_URL = "COLE_AQUI_A_URL_DO_SEU_WEB_APP"
+APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby0sYky_AQVQN7NMv0MK55UngaBm7ayey1mJB37BE7lB6rNjmUvUJ68FD0-qsPe-vgT/exec"
 
 st_autorefresh(interval=60000)
 st.set_page_config(layout="wide")
