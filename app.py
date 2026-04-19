@@ -6,7 +6,7 @@ from io import StringIO
 from datetime import datetime, date
 import json
 
-APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby0sYky_AQVQN7NMv0MK55UngaBm7ayey1mJB37BE7lB6rNjmUvUJ68FD0-qsPe-vgT/exec"
+APPS_SCRIPT_URL = "COLE_AQUI_A_URL_DO_SEU_WEB_APP"
 
 st_autorefresh(interval=60000)
 st.set_page_config(layout="wide")
@@ -36,18 +36,13 @@ def carregar_ranchos():
     try:
         r = requests.get(
             APPS_SCRIPT_URL,
-            params={
-                "acao": "listar",
-                "_ts": int(datetime.now().timestamp())
-            },
-            timeout=10
+            params={"acao": "listar", "_ts": int(datetime.now().timestamp())},
+            timeout=20
         )
         r.raise_for_status()
         data = r.json()
-
         if not isinstance(data, dict):
             return {}
-
         return {str(k).strip(): v for k, v in data.items()}
     except Exception as e:
         st.warning(f"Erro ao carregar ranchos: {e}")
@@ -67,7 +62,7 @@ dados_total = []
 
 for aba in abas:
     url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/gviz/tq?tqx=out:csv&sheet={aba}"
-    response = requests.get(url)
+    response = requests.get(url, timeout=20)
     f = StringIO(response.text)
     reader = csv.DictReader(f)
     for linha in reader:
@@ -167,16 +162,13 @@ html_head = """
 
 <style>
 body { font-family: 'Segoe UI'; background: #f5f7fa; margin: 20px; }
-
 .linha h2 {
     background: #2c3e50;
     color: white;
     padding: 10px;
     border-radius: 8px;
 }
-
 .cards { display: flex; flex-wrap: wrap; }
-
 .card {
     width: 260px;
     padding: 12px;
@@ -186,7 +178,6 @@ body { font-family: 'Segoe UI'; background: #f5f7fa; margin: 20px; }
     box-shadow: 0px 4px 12px rgba(0,0,0,0.06);
     border-left: 5px solid transparent;
 }
-
 .producao { border-left: 5px solid #a9cce3; background: #f4f9fd; }
 .pendente { border-left: 5px solid #f5b7b1; background: #fdf2f2; }
 .finalizado { border-left: 5px solid #a9dfbf; background: #f3fbf6; }
@@ -266,9 +257,12 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     y += 18;
 
     function campo(x,y,w,h,t,v){
-        pdf.setFontSize(8); pdf.setFont("helvetica","bold");
-        pdf.text(t,x,y-1); pdf.rect(x,y,w,h);
-        pdf.setFont("helvetica","normal"); pdf.setFontSize(10);
+        pdf.setFontSize(8);
+        pdf.setFont("helvetica","bold");
+        pdf.text(t,x,y-1);
+        pdf.rect(x,y,w,h);
+        pdf.setFont("helvetica","normal");
+        pdf.setFontSize(10);
         let linhas = pdf.splitTextToSize(String(v), w - 4);
         pdf.text(linhas, x+2, y+6);
     }
@@ -296,21 +290,22 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
         colunas = ["HORA INICIO","HORA FIM","N PALLETS","SACOS (UN)","RASGADOS","PARADAS"];
     }
 
-    let larguraTabela = 190/colunas.length;
+    let larguraTabela = 190 / colunas.length;
     let alturaLinha = 8;
     pdf.setFont("helvetica","bold");
     colunas.forEach((c,i)=>{
         pdf.rect(10+i*larguraTabela,y,larguraTabela,alturaLinha);
         pdf.text(c,10+i*larguraTabela+1,y+5);
     });
+
     pdf.setFont("helvetica","normal");
-    y+=alturaLinha;
+    y += alturaLinha;
     const limite = 210;
     while(y < limite){
         for(let j=0;j<colunas.length;j++){
             pdf.rect(10+j*larguraTabela,y,larguraTabela,alturaLinha);
         }
-        y+=alturaLinha;
+        y += alturaLinha;
     }
 
     y += 5;
@@ -328,10 +323,10 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.text("Nome / Assinatura", 10, y + 4);
 
     const b64Rancho = RANCHOS_B64[ordem];
-    if(b64Rancho){
+    if (b64Rancho){
         try {
             const { PDFDocument } = PDFLib;
-            const pdfPrincipalBytes = pdf.output('arraybuffer');
+            const pdfPrincipalBytes = pdf.output("arraybuffer");
 
             const binaryStr = atob(b64Rancho);
             const ranchoBytes = new Uint8Array(binaryStr.length);
@@ -345,11 +340,11 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
             paginas.forEach(p => docFinal.addPage(p));
 
             const bytesFinais = await docFinal.save();
-            const blob = new Blob([bytesFinais], { type: 'application/pdf' });
+            const blob = new Blob([bytesFinais], { type: "application/pdf" });
             const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
+            const a = document.createElement("a");
             a.href = url;
-            a.download = 'ordem_producao.pdf';
+            a.download = "ordem_producao.pdf";
             a.click();
             URL.revokeObjectURL(url);
             return;
@@ -364,9 +359,10 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
 function verRancho(ordem){
     const b64 = RANCHOS_B64[ordem];
     if(!b64){
-        alert("❌ Nenhum rancho anexado para essa ordem");
+        alert("Nenhum rancho anexado para essa ordem");
         return;
     }
+
     const dataUrl = "data:application/pdf;base64," + b64;
     const novaAba = window.open("", "_blank");
     novaAba.document.write('<html><head><title>Rancho</title></head><body style="margin:0"><iframe src="' + dataUrl + '" width="100%" height="100%" style="border:none;"></iframe></body></html>');
@@ -379,12 +375,13 @@ function anexarRancho(input, ordem){
 
     const statusEl = document.getElementById("status_" + ordem);
     if(statusEl){
-        statusEl.innerHTML = "⏳ Enviando...";
+        statusEl.innerHTML = "Enviando...";
         statusEl.style.color = "orange";
     }
 
     const reader = new FileReader();
-    reader.onload = function(e){
+
+    reader.onload = async function(e){
         const b64 = e.target.result.split(",")[1];
 
         let numeroRancho = "";
@@ -395,44 +392,58 @@ function anexarRancho(input, ordem){
         } catch(err){}
 
         if(!numeroRancho){
-            numeroRancho = prompt("Número do rancho não identificado. Digite manualmente:") || "Não informado";
+            numeroRancho = prompt("Numero do rancho nao identificado. Digite manualmente:") || "Nao informado";
         }
 
-        const url = new URL(APPS_SCRIPT_URL);
-        url.searchParams.set("acao", "salvar");
-        url.searchParams.set("ordem", ordem);
-        url.searchParams.set("numero", numeroRancho);
-        url.searchParams.set("nome", file.name);
-        url.searchParams.set("b64", b64);
-        url.searchParams.set("_ts", Date.now());
+        try {
+            const resp = await fetch(APPS_SCRIPT_URL, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    acao: "salvar",
+                    ordem: ordem,
+                    numero: numeroRancho,
+                    nome: file.name,
+                    b64: b64
+                })
+            });
 
-        fetch(url.toString(), { mode: "no-cors" }).then(() => {
+            const data = await resp.json();
+
+            if(!data.ok){
+                throw new Error(data.erro || "Falha ao salvar rancho");
+            }
+
             RANCHOS_META[ordem] = { numero: numeroRancho, nome: file.name };
             RANCHOS_B64[ordem] = b64;
+
             if(statusEl){
-                statusEl.innerHTML = "✅ Rancho: " + numeroRancho;
+                statusEl.innerHTML = "Rancho: " + numeroRancho;
                 statusEl.style.color = "green";
             }
-        }).catch(() => {
-            RANCHOS_META[ordem] = { numero: numeroRancho, nome: file.name };
-            RANCHOS_B64[ordem] = b64;
+        } catch(err){
+            console.error(err);
             if(statusEl){
-                statusEl.innerHTML = "✅ Rancho salvo (recarregue para confirmar)";
-                statusEl.style.color = "green";
+                statusEl.innerHTML = "Erro ao salvar rancho";
+                statusEl.style.color = "red";
             }
-        });
+            alert("Erro ao salvar o rancho no servidor.");
+        }
     };
+
     reader.readAsDataURL(file);
 }
 
 window.onload = function(){
     document.querySelectorAll("[id^='status_']").forEach(el => {
-        let ordem = el.id.replace("status_", "");
+        const ordem = el.id.replace("status_", "");
         if(RANCHOS_META[ordem]){
-            el.innerHTML = "✅ Rancho: " + RANCHOS_META[ordem].numero;
+            el.innerHTML = "Rancho: " + (RANCHOS_META[ordem].numero || "");
             el.style.color = "green";
         } else {
-            el.innerHTML = "❌ Nenhum rancho";
+            el.innerHTML = "Nenhum rancho";
             el.style.color = "red";
         }
     });
@@ -442,7 +453,7 @@ window.onload = function(){
 
 <body>
 <div style="margin-bottom:15px;">
-    <button onclick="exportarPagina()">📥 Baixar Página Completa</button>
+    <button onclick="exportarPagina()">Baixar Pagina Completa</button>
 </div>
 <div id="conteudo">
 """
@@ -482,7 +493,6 @@ for linha, datas in estrutura.items():
                     continue
                 if produto_pesquisa and produto_pesquisa.lower() not in produto.lower():
                     continue
-
                 if semanas_sel:
                     semana_item = get_semana(item.get("Data", ""))
                     if semana_item not in semanas_sel:
@@ -518,11 +528,10 @@ for linha, datas in estrutura.items():
             else:
                 classe = "pendente"
 
-            tem_rancho = ordem in ranchos_atuais
-            if tem_rancho:
-                status_rancho_html = '<span style="color:green;font-size:11px;">✅ Rancho: ' + esc(ranchos_atuais[ordem].get("numero", "")) + '</span>'
+            if ordem in ranchos_atuais:
+                status_rancho_html = '<span style="color:green;font-size:11px;">Rancho: ' + esc(ranchos_atuais[ordem].get("numero", "")) + '</span>'
             else:
-                status_rancho_html = '<span style="color:red;font-size:11px;">❌ Nenhum rancho</span>'
+                status_rancho_html = '<span style="color:red;font-size:11px;">Nenhum rancho</span>'
 
             p_esc = esc(produto)
             o_esc = esc(ordem)
@@ -544,11 +553,11 @@ for linha, datas in estrutura.items():
                 "<button onclick=\"exportarCard('"
                 + p_esc + "','" + o_esc + "','" + t_esc + "','"
                 + qt_esc + "','" + qp_esc + "','" + s_esc + "','"
-                + d_esc + "','" + l_esc + "')\">📄 Gerar PDF</button>"
+                + d_esc + "','" + l_esc + "')\">Gerar PDF</button>"
                 "<br>"
-                "<label class='upload-label'>📎 Anexar Rancho"
+                "<label class='upload-label'>Anexar Rancho"
                 "<input type='file' accept='application/pdf' onchange=\"anexarRancho(this,'" + o_esc + "')\"></label>"
-                " <button onclick=\"verRancho('" + o_esc + "')\">👁 Ver Rancho</button>"
+                " <button onclick=\"verRancho('" + o_esc + "')\">Ver Rancho</button>"
                 "<div id='status_" + o_esc + "' style='font-size:11px;margin-top:4px;'>" + status_rancho_html + "</div>"
                 "</div>"
             )
