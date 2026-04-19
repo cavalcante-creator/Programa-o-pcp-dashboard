@@ -5,7 +5,6 @@ import csv
 from io import StringIO
 from datetime import datetime, date
 import json
-import base64
 
 APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby0sYky_AQVQN7NMv0MK55UngaBm7ayey1mJB37BE7lB6rNjmUvUJ68FD0-qsPe-vgT/exec"
 
@@ -19,33 +18,6 @@ st.markdown("""
 .logo { width: 200px; margin-top: 10px; }
 .titulo { flex-grow: 1; text-align: center; font-size: 26px; font-weight: 600; }
 .vazio { width: 140px; }
-.card-box {
-    background: #ffffff;
-    border-radius: 12px;
-    padding: 14px;
-    box-shadow: 0px 4px 12px rgba(0,0,0,0.06);
-    border-left: 5px solid transparent;
-    margin-bottom: 12px;
-}
-.producao { border-left-color: #a9cce3; background: #f4f9fd; }
-.pendente { border-left-color: #f5b7b1; background: #fdf2f2; }
-.finalizado { border-left-color: #a9dfbf; background: #f3fbf6; }
-.liberada { border-left-color: #f9e79f; background: #fef9e7; }
-.linha-titulo {
-    background: #2c3e50;
-    color: white;
-    padding: 10px;
-    border-radius: 8px;
-    margin-top: 16px;
-    margin-bottom: 10px;
-}
-.data-titulo {
-    font-size: 20px;
-    font-weight: 600;
-    margin: 18px 0 12px 0;
-}
-.rancho-ok { color: green; font-size: 12px; }
-.rancho-no { color: red; font-size: 12px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -57,74 +29,47 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-
 def esc(valor):
     return str(valor).replace("\\", "\\\\").replace("'", "\\'").replace('"', '\\"').replace("\n", " ").replace("\r", "")
-
 
 def carregar_ranchos():
     try:
         r = requests.get(
             APPS_SCRIPT_URL,
             params={"acao": "listar", "_ts": int(datetime.now().timestamp())},
-            timeout=30
+            timeout=15
         )
         r.raise_for_status()
         data = r.json()
         if not isinstance(data, dict):
             return {}
         return {str(k).strip(): v for k, v in data.items()}
-    except Exception as e:
-        st.warning(f"Erro ao carregar ranchos: {e}")
+    except:
         return {}
-
-
-def salvar_rancho(ordem, numero, nome_arquivo, arquivo_bytes):
-    b64 = base64.b64encode(arquivo_bytes).decode("utf-8")
-
-    payload = {
-        "acao": "salvar",
-        "ordem": str(ordem).strip(),
-        "numero": str(numero).strip(),
-        "nome": nome_arquivo,
-        "b64": b64
-    }
-
-    r = requests.post(APPS_SCRIPT_URL, json=payload, timeout=120)
-    r.raise_for_status()
-    data = r.json()
-
-    if not data.get("ok"):
-        raise Exception(data.get("erro", "Falha ao salvar rancho"))
-
-    return data
-
 
 ranchos_atuais = carregar_ranchos()
 
 sheet_id = "1eQHvLVw-WLsA4UruaM6GThcy0dgb5ONNAn8AZ_KwBuU"
 
 abas = [
-    "BASE_LINHA_1", "BASE_LINHA_2", "BASE_LINHA_3",
+    "BASE_LINHA_1","BASE_LINHA_2","BASE_LINHA_3",
     "BASE_AREA_LIQUIDA",
-    "BASE_REJUNTE_MAQUINA_1", "BASE_REJUNTE_MAQUINA_2", "BASE_REJUNTE_MAQUINA_3"
+    "BASE_REJUNTE_MAQUINA_1","BASE_REJUNTE_MAQUINA_2","BASE_REJUNTE_MAQUINA_3"
 ]
 
 dados_total = []
 
 for aba in abas:
     url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/gviz/tq?tqx=out:csv&sheet={aba}"
-    response = requests.get(url, timeout=30)
+    response = requests.get(url, timeout=20)
     f = StringIO(response.text)
     reader = csv.DictReader(f)
     for linha in reader:
         linha["Linha"] = aba
         dados_total.append(linha)
 
-
 def nome_linha(linha):
     return linha.replace("BASE_", "").replace("_", " ")
-
 
 def get_semana(data_str):
     try:
@@ -134,26 +79,20 @@ def get_semana(data_str):
     except:
         return ""
 
-
 def to_float(valor):
     try:
         return float(str(valor).replace(".", "").replace(",", "."))
     except:
         return 0
 
-
 def limpar_status(s):
     if not s:
         return ""
     s = str(s).strip().upper()
-    if "AGUARDANDO" in s:
-        return "AGUARDANDO"
-    if "PRODUÇÃO" in s:
-        return "EM PRODUÇÃO"
-    if "LIBERADA" in s:
-        return "LIBERADA"
+    if "AGUARDANDO" in s: return "AGUARDANDO"
+    if "PRODUÇÃO" in s: return "EM PRODUÇÃO"
+    if "LIBERADA" in s: return "LIBERADA"
     return s
-
 
 estrutura = {}
 
@@ -197,18 +136,8 @@ mostrar_todas = colb2.checkbox("Mostrar todas as datas", value=True)
 
 data_sel = data_input.strftime("%d/%m/%Y")
 
-ranchos_meta_json = json.dumps({
-    str(k).strip(): {
-        "numero": v.get("numero", ""),
-        "nome": v.get("nome", "")
-    }
-    for k, v in ranchos_atuais.items()
-})
-
-ranchos_b64_json = json.dumps({
-    str(k).strip(): v.get("base64", "")
-    for k, v in ranchos_atuais.items()
-})
+ranchos_meta_json = json.dumps({str(k).strip(): {"numero": v.get("numero",""), "nome": v.get("nome","")} for k, v in ranchos_atuais.items()})
+ranchos_b64_json  = json.dumps({str(k).strip(): v.get("base64","") for k, v in ranchos_atuais.items()})
 
 html_head = """
 <html>
@@ -219,13 +148,16 @@ html_head = """
 
 <style>
 body { font-family: 'Segoe UI'; background: #f5f7fa; margin: 20px; }
+
 .linha h2 {
     background: #2c3e50;
     color: white;
     padding: 10px;
     border-radius: 8px;
 }
+
 .cards { display: flex; flex-wrap: wrap; }
+
 .card {
     width: 260px;
     padding: 12px;
@@ -235,9 +167,11 @@ body { font-family: 'Segoe UI'; background: #f5f7fa; margin: 20px; }
     box-shadow: 0px 4px 12px rgba(0,0,0,0.06);
     border-left: 5px solid transparent;
 }
+
 .producao { border-left: 5px solid #a9cce3; background: #f4f9fd; }
 .pendente { border-left: 5px solid #f5b7b1; background: #fdf2f2; }
 .finalizado { border-left: 5px solid #a9dfbf; background: #f3fbf6; }
+.reprogramado { border-left: 5px solid #d7bde2; background: #f8f4fb; }
 .liberada { border-left: 5px solid #f9e79f; background: #fef9e7; }
 
 button {
@@ -249,11 +183,25 @@ button {
     color: white;
     cursor: pointer;
 }
+
+.upload-label {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    background: #5d6d7e;
+    color: white;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.upload-label input { display: none; }
 </style>
 
 <script>
 const RANCHOS_META = __RANCHOS_META__;
 const RANCHOS_B64  = __RANCHOS_B64__;
+const APPS_SCRIPT_URL = "__APPS_SCRIPT_URL__";
 
 async function exportarPagina(){
     const { jsPDF } = window.jspdf;
@@ -299,12 +247,9 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     y += 18;
 
     function campo(x,y,w,h,t,v){
-        pdf.setFontSize(8);
-        pdf.setFont("helvetica","bold");
-        pdf.text(t,x,y-1);
-        pdf.rect(x,y,w,h);
-        pdf.setFont("helvetica","normal");
-        pdf.setFontSize(10);
+        pdf.setFontSize(8); pdf.setFont("helvetica","bold");
+        pdf.text(t,x,y-1); pdf.rect(x,y,w,h);
+        pdf.setFont("helvetica","normal"); pdf.setFontSize(10);
         let linhas = pdf.splitTextToSize(String(v), w - 4);
         pdf.text(linhas, x+2, y+6);
     }
@@ -332,22 +277,21 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
         colunas = ["HORA INICIO","HORA FIM","N PALLETS","SACOS (UN)","RASGADOS","PARADAS"];
     }
 
-    let larguraTabela = 190 / colunas.length;
+    let larguraTabela = 190/colunas.length;
     let alturaLinha = 8;
     pdf.setFont("helvetica","bold");
     colunas.forEach((c,i)=>{
         pdf.rect(10+i*larguraTabela,y,larguraTabela,alturaLinha);
         pdf.text(c,10+i*larguraTabela+1,y+5);
     });
-
     pdf.setFont("helvetica","normal");
-    y += alturaLinha;
+    y+=alturaLinha;
     const limite = 210;
     while(y < limite){
         for(let j=0;j<colunas.length;j++){
             pdf.rect(10+j*larguraTabela,y,larguraTabela,alturaLinha);
         }
-        y += alturaLinha;
+        y+=alturaLinha;
     }
 
     y += 5;
@@ -365,28 +309,26 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.text("Nome / Assinatura", 10, y + 4);
 
     const b64Rancho = RANCHOS_B64[ordem];
-    if (b64Rancho){
+    if(b64Rancho){
         try {
             const { PDFDocument } = PDFLib;
-            const pdfPrincipalBytes = pdf.output("arraybuffer");
-
+            const pdfPrincipalBytes = pdf.output('arraybuffer');
             const binaryStr = atob(b64Rancho);
             const ranchoBytes = new Uint8Array(binaryStr.length);
             for(let i = 0; i < binaryStr.length; i++){
                 ranchoBytes[i] = binaryStr.charCodeAt(i);
             }
-
-            const docFinal = await PDFDocument.load(pdfPrincipalBytes);
-            const docRancho = await PDFDocument.load(ranchoBytes);
-            const paginas = await docFinal.copyPages(docRancho, docRancho.getPageIndices());
+            const docFinal   = await PDFDocument.load(pdfPrincipalBytes);
+            const docRancho  = await PDFDocument.load(ranchoBytes);
+            const paginas    = await docFinal.copyPages(docRancho, docRancho.getPageIndices());
             paginas.forEach(p => docFinal.addPage(p));
 
             const bytesFinais = await docFinal.save();
-            const blob = new Blob([bytesFinais], { type: "application/pdf" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = "ordem_producao.pdf";
+            const blob = new Blob([bytesFinais], { type: 'application/pdf' });
+            const url  = URL.createObjectURL(blob);
+            const a    = document.createElement('a');
+            a.href     = url;
+            a.download = 'ordem_producao.pdf';
             a.click();
             URL.revokeObjectURL(url);
             return;
@@ -401,44 +343,125 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
 function verRancho(ordem){
     const b64 = RANCHOS_B64[ordem];
     if(!b64){
-        alert("Nenhum rancho anexado para essa ordem");
+        alert("❌ Nenhum rancho anexado para essa ordem");
         return;
     }
-
     const dataUrl = "data:application/pdf;base64," + b64;
     const novaAba = window.open("", "_blank");
     novaAba.document.write('<html><head><title>Rancho</title></head><body style="margin:0"><iframe src="' + dataUrl + '" width="100%" height="100%" style="border:none;"></iframe></body></html>');
     novaAba.document.close();
 }
+
+function anexarRancho(input, ordem){
+    const file = input.files[0];
+    if(!file) return;
+
+    const statusEl = document.getElementById("status_" + ordem);
+    if(statusEl){
+        statusEl.innerHTML = "⏳ Enviando...";
+        statusEl.style.color = "orange";
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e){
+        const b64 = e.target.result.split(",")[1];
+
+        let numeroRancho = "";
+        try {
+            const decoded = atob(b64);
+            const match = decoded.match(/rancho\\s*\\(?\\s*(\\d+)/i);
+            if(match) numeroRancho = match[1];
+        } catch(err){}
+
+        if(!numeroRancho){
+            numeroRancho = prompt("Número do rancho não identificado. Digite manualmente:") || "Não informado";
+        }
+
+        const iframe = document.getElementById("upload_target");
+        const form = document.createElement("form");
+        form.method = "POST";
+        form.action = APPS_SCRIPT_URL;
+        form.target = "upload_target";
+        form.style.display = "none";
+
+        function addField(name, value){
+            const input = document.createElement("input");
+            input.type = "hidden";
+            input.name = name;
+            input.value = value;
+            form.appendChild(input);
+        }
+
+        addField("acao", "salvar");
+        addField("ordem", ordem);
+        addField("numero", numeroRancho);
+        addField("nome", file.name);
+        addField("b64", b64);
+
+        document.body.appendChild(form);
+        form.submit();
+
+        setTimeout(function(){
+            RANCHOS_META[ordem] = { numero: numeroRancho, nome: file.name };
+            RANCHOS_B64[ordem] = b64;
+            if(statusEl){
+                statusEl.innerHTML = "✅ Rancho: " + numeroRancho;
+                statusEl.style.color = "green";
+            }
+            form.remove();
+        }, 1500);
+    };
+
+    reader.readAsDataURL(file);
+}
+
+window.onload = function(){
+    document.querySelectorAll("[id^='status_']").forEach(el => {
+        let ordem = el.id.replace("status_", "");
+        if(RANCHOS_META[ordem]){
+            el.innerHTML = "✅ Rancho: " + RANCHOS_META[ordem].numero;
+            el.style.color = "green";
+        } else {
+            el.innerHTML = "❌ Nenhum rancho";
+            el.style.color = "red";
+        }
+    });
+};
 </script>
 </head>
 
 <body>
+<iframe name="upload_target" id="upload_target" style="display:none;"></iframe>
+
 <div style="margin-bottom:15px;">
-    <button onclick="exportarPagina()">Baixar Pagina Completa</button>
+    <button onclick="exportarPagina()">📥 Baixar Página Completa</button>
 </div>
 <div id="conteudo">
 """
 
 html_head = html_head.replace("__RANCHOS_META__", ranchos_meta_json)
-html_head = html_head.replace("__RANCHOS_B64__", ranchos_b64_json)
+html_head = html_head.replace("__RANCHOS_B64__",  ranchos_b64_json)
+html_head = html_head.replace("__APPS_SCRIPT_URL__", APPS_SCRIPT_URL)
 
 html = html_head
 
 for linha, datas in estrutura.items():
+
     if linha_sel != "Todas" and linha != linha_sel:
         continue
 
-    st.markdown(f"<div class='linha-titulo'>{linha}</div>", unsafe_allow_html=True)
+    bloco = "<div class='linha'><h2>" + linha + "</h2>"
     tem_linha = False
 
     for data, turnos in datas.items():
+
         if not mostrar_todas and data != data_sel:
             continue
 
         itens_filtrados = []
 
         for turno, itens in turnos.items():
+
             if turno_sel != "Todos" and turno != turno_sel:
                 continue
 
@@ -466,11 +489,9 @@ for linha, datas in estrutura.items():
             continue
 
         tem_linha = True
-        st.markdown(f"<div class='data-titulo'>📅 {data}</div>", unsafe_allow_html=True)
+        bloco += "<h3>📅 " + data + "</h3><div class='cards'>"
 
-        cols = st.columns(3)
-
-        for idx, item in enumerate(itens_filtrados):
+        for item in itens_filtrados:
             produto = item.get("Produto", "")
             ordem = str(item.get("Ordem", "")).strip()
             status_original = item.get("Status", "")
@@ -491,89 +512,47 @@ for linha, datas in estrutura.items():
             else:
                 classe = "pendente"
 
-            with cols[idx % 3]:
-                st.markdown(f"<div class='card-box {classe}'>", unsafe_allow_html=True)
-                st.markdown(f"**{produto}**")
-                st.write(f"Ordem: {ordem}")
-                st.write(f"Turno: {turno_item}")
-                st.write(f"Qtde: {qtde_total}")
-                st.write(f"Pendente: {qtde_pendente}")
-                st.write(f"Status: {status_original}")
+            tem_rancho = ordem in ranchos_atuais
+            if tem_rancho:
+                status_rancho_html = '<span style="color:green;font-size:11px;">✅ Rancho: ' + esc(ranchos_atuais[ordem].get("numero","")) + '</span>'
+            else:
+                status_rancho_html = '<span style="color:red;font-size:11px;">❌ Nenhum rancho</span>'
 
-                if ordem in ranchos_atuais:
-                    st.markdown(
-                        f"<div class='rancho-ok'>Rancho: {ranchos_atuais[ordem].get('numero', '')}</div>",
-                        unsafe_allow_html=True
-                    )
-                else:
-                    st.markdown("<div class='rancho-no'>Nenhum rancho</div>", unsafe_allow_html=True)
+            p_esc  = esc(produto)
+            o_esc  = esc(ordem)
+            t_esc  = esc(turno_item)
+            qt_esc = esc(qtde_total)
+            qp_esc = esc(qtde_pendente)
+            s_esc  = esc(status_original)
+            d_esc  = esc(data)
+            l_esc  = esc(linha)
 
-                with st.expander("Anexar Rancho"):
-                    numero_manual = st.text_input(
-                        "Número do Rancho",
-                        key=f"numero_{ordem}"
-                    )
-                    arquivo_pdf = st.file_uploader(
-                        "PDF do Rancho",
-                        type=["pdf"],
-                        key=f"file_{ordem}"
-                    )
+            bloco += (
+                "<div class='card " + classe + "'>"
+                "<b>" + produto + "</b><br>"
+                "Ordem: " + ordem + "<br>"
+                "Turno: " + turno_item + "<br>"
+                "Qtde: " + qtde_total + "<br>"
+                "Pendente: " + qtde_pendente + "<br>"
+                "Status: " + status_original + "<br>"
+                "<button onclick=\"exportarCard('"
+                + p_esc + "','" + o_esc + "','" + t_esc + "','"
+                + qt_esc + "','" + qp_esc + "','" + s_esc + "','"
+                + d_esc + "','" + l_esc + "')\">📄 Gerar PDF</button>"
+                "<br>"
+                "<label class='upload-label'>📎 Anexar Rancho"
+                "<input type='file' accept='application/pdf' onchange=\"anexarRancho(this,'" + o_esc + "')\"></label>"
+                " <button onclick=\"verRancho('" + o_esc + "')\">👁 Ver Rancho</button>"
+                "<div id='status_" + o_esc + "' style='font-size:11px;margin-top:4px;'>" + status_rancho_html + "</div>"
+                "</div>"
+            )
 
-                    if st.button("Salvar Rancho", key=f"salvar_{ordem}"):
-                        if not arquivo_pdf:
-                            st.error("Selecione um PDF.")
-                        else:
-                            try:
-                                numero_final = numero_manual.strip() if numero_manual.strip() else "Não informado"
-                                salvar_rancho(
-                                    ordem=ordem,
-                                    numero=numero_final,
-                                    nome_arquivo=arquivo_pdf.name,
-                                    arquivo_bytes=arquivo_pdf.read()
-                                )
-                                st.success("Rancho salvo com sucesso.")
-                                st.rerun()
-                            except Exception as e:
-                                st.error(f"Erro ao salvar rancho: {e}")
+        bloco += "</div>"
+    bloco += "</div>"
 
-                if ordem in ranchos_atuais and ranchos_atuais[ordem].get("base64"):
-                    b64 = ranchos_atuais[ordem]["base64"]
-                    href = f"data:application/pdf;base64,{b64}"
-                    st.markdown(
-                        f'<a href="{href}" target="_blank">Ver Rancho</a>',
-                        unsafe_allow_html=True
-                    )
-
-                p_esc = esc(produto)
-                o_esc = esc(ordem)
-                t_esc = esc(turno_item)
-                qt_esc = esc(qtde_total)
-                qp_esc = esc(qtde_pendente)
-                s_esc = esc(status_original)
-                d_esc = esc(data)
-                l_esc = esc(linha)
-
-                html += (
-                    "<div class='card " + classe + "'>"
-                    "<b>" + produto + "</b><br>"
-                    "Ordem: " + ordem + "<br>"
-                    "Turno: " + turno_item + "<br>"
-                    "Qtde: " + qtde_total + "<br>"
-                    "Pendente: " + qtde_pendente + "<br>"
-                    "Status: " + status_original + "<br>"
-                    "<button onclick=\"exportarCard('"
-                    + p_esc + "','" + o_esc + "','" + t_esc + "','"
-                    + qt_esc + "','" + qp_esc + "','" + s_esc + "','"
-                    + d_esc + "','" + l_esc + "')\">Gerar PDF</button>"
-                    "</div>"
-                )
-
-                st.markdown("</div>", unsafe_allow_html=True)
-
-    if not tem_linha:
-        continue
+    if tem_linha:
+        html += bloco
 
 html += "</div></body></html>"
 
-st.markdown("---")
 st.components.v1.html(html, height=900, scrolling=True)
