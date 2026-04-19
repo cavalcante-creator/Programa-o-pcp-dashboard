@@ -4,6 +4,9 @@ import requests
 import csv
 from io import StringIO
 from datetime import datetime, date
+import json
+import os
+import base64
 
 st_autorefresh(interval=60000)
 st.set_page_config(layout="wide")
@@ -26,6 +29,49 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+# ─── RANCHO COMPARTILHADO ──────────────────────────────────────────────
+RANCHO_FILE = "ranchos_compartilhados.json"
+
+def carregar_ranchos():
+    if os.path.exists(RANCHO_FILE):
+        try:
+            with open(RANCHO_FILE, "r") as f:
+                return json.load(f)
+        except:
+            return {}
+    return {}
+
+def salvar_ranchos(dados):
+    with open(RANCHO_FILE, "w") as f:
+        json.dump(dados, f)
+
+if "ranchos" not in st.session_state:
+    st.session_state.ranchos = carregar_ranchos()
+
+# ─── UPLOAD GLOBAL DE RANCHO ──────────────────────────────────────────
+with st.expander("📎 Anexar Rancho (visível para todos)", expanded=False):
+    col_up1, col_up2, col_up3 = st.columns([2, 2, 1])
+    ordem_rancho = col_up1.text_input("Número da Ordem", key="ordem_rancho_input")
+    numero_rancho = col_up2.text_input("Número do Rancho", key="numero_rancho_input")
+    arquivo_rancho = col_up3.file_uploader("PDF do Rancho", type=["pdf"], key="upload_rancho", label_visibility="collapsed")
+
+    if st.button("✅ Salvar Rancho", key="btn_salvar_rancho"):
+        if ordem_rancho and arquivo_rancho:
+            bytes_data = arquivo_rancho.read()
+            b64 = base64.b64encode(bytes_data).decode("utf-8")
+            dados_ranchos = carregar_ranchos()
+            dados_ranchos[ordem_rancho] = {
+                "base64": b64,
+                "numero": numero_rancho or "Não informado",
+                "nome": arquivo_rancho.name
+            }
+            salvar_ranchos(dados_ranchos)
+            st.session_state.ranchos = dados_ranchos
+            st.success(f"✅ Rancho da ordem {ordem_rancho} salvo com sucesso! Visível para todos.")
+        else:
+            st.warning("Informe o número da ordem e selecione o PDF do rancho.")
+
+# ─── DADOS GOOGLE SHEETS ──────────────────────────────────────────────
 sheet_id = "1eQHvLVw-WLsA4UruaM6GThcy0dgb5ONNAn8AZ_KwBuU"
 
 abas = [
@@ -114,25 +160,29 @@ mostrar_todas = colb2.checkbox("Mostrar todas as datas", value=True)
 
 data_sel = data_input.strftime("%d/%m/%Y")
 
-html = """
+# ─── MONTA JSON DOS RANCHOS PARA O JS ─────────────────────────────────
+ranchos_atuais = st.session_state.ranchos
+ranchos_json = json.dumps(ranchos_atuais)
+
+html = f"""
 <html>
 <head>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <style>
-body { font-family: 'Segoe UI'; background: #f5f7fa; margin: 20px; }
+body {{ font-family: 'Segoe UI'; background: #f5f7fa; margin: 20px; }}
 
-.linha h2 {
+.linha h2 {{
     background: #2c3e50;
     color: white;
     padding: 10px;
     border-radius: 8px;
-}
+}}
 
-.cards { display: flex; flex-wrap: wrap; }
+.cards {{ display: flex; flex-wrap: wrap; }}
 
-.card {
+.card {{
     width: 260px;
     padding: 12px;
     margin: 8px;
@@ -140,29 +190,32 @@ body { font-family: 'Segoe UI'; background: #f5f7fa; margin: 20px; }
     background: white;
     box-shadow: 0px 4px 12px rgba(0,0,0,0.06);
     border-left: 5px solid transparent;
-}
+}}
 
-.producao { border-left: 5px solid #a9cce3; background: #f4f9fd; }
-.pendente { border-left: 5px solid #f5b7b1; background: #fdf2f2; }
-.finalizado { border-left: 5px solid #a9dfbf; background: #f3fbf6; }
-.reprogramado { border-left: 5px solid #d7bde2; background: #f8f4fb; }
-.liberada { border-left: 5px solid #f9e79f; background: #fef9e7; }
+.producao {{ border-left: 5px solid #a9cce3; background: #f4f9fd; }}
+.pendente {{ border-left: 5px solid #f5b7b1; background: #fdf2f2; }}
+.finalizado {{ border-left: 5px solid #a9dfbf; background: #f3fbf6; }}
+.reprogramado {{ border-left: 5px solid #d7bde2; background: #f8f4fb; }}
+.liberada {{ border-left: 5px solid #f9e79f; background: #fef9e7; }}
 
-button {
+button {{
     margin-top: 8px;
     padding: 6px 10px;
     border: none;
     border-radius: 6px;
     background: #2c3e50;
     color: white;
-}
+}}
 </style>
 
 <script>
-async function exportarPagina(){
-    const { jsPDF } = window.jspdf;
+// Ranchos compartilhados vindos do servidor (visíveis para todos)
+const RANCHOS = {ranchos_json};
+
+async function exportarPagina(){{
+    const {{ jsPDF }} = window.jspdf;
     const elemento = document.getElementById("conteudo");
-    const canvas = await html2canvas(elemento, { scale: 2 });
+    const canvas = await html2canvas(elemento, {{ scale: 2 }});
     const imgData = canvas.toDataURL("image/png");
 
     const pdf = new jsPDF('p','mm','a4');
@@ -171,26 +224,26 @@ async function exportarPagina(){
 
     pdf.addImage(imgData, 'PNG', 0, 0, largura, altura);
     pdf.save("pagina_completa.pdf");
-}
+}}
 
-async function exportarCard(produto, ordem, turno, qtde, pendente, status, data, linha){
-    const { jsPDF } = window.jspdf;
+async function exportarCard(produto, ordem, turno, qtde, pendente, status, data, linha){{
+    const {{ jsPDF }} = window.jspdf;
     const pdf = new jsPDF('p','mm','a4');
 
     let y = 10;
 
     const logoUrl = "https://raw.githubusercontent.com/cavalcante-creator/Programa-o-pcp-dashboard/main/COL_LOGO_8.png";
 
-try {
+try {{
     const img = await fetch(logoUrl);
     const blob = await img.blob();
 
     const reader = new FileReader();
 
-    await new Promise(resolve => {
+    await new Promise(resolve => {{
         reader.onloadend = resolve;
         reader.readAsDataURL(blob);
-    });
+    }});
 
     const base64 = reader.result;
     const props = pdf.getImageProperties(base64);
@@ -200,9 +253,7 @@ try {
 
     pdf.addImage(base64, 'PNG', 10, y, largura, altura);
 
-} catch(e){}
-
-        
+}} catch(e){{}}
 
     pdf.setFont("helvetica","bold");
     pdf.setFontSize(16);
@@ -220,7 +271,7 @@ try {
     pdf.setTextColor(0,0,0);
     y += 18;
 
-    function campo(x,y,w,h,t,v){
+    function campo(x,y,w,h,t,v){{
         pdf.setFontSize(8);
         pdf.setFont("helvetica","bold");
         pdf.text(t,x,y-1);
@@ -229,7 +280,7 @@ try {
         pdf.setFontSize(10);
         let linhas = pdf.splitTextToSize(v, w - 4);
         pdf.text(linhas, x+2, y+6);
-    }
+    }}
 
     campo(10,y,120,12,"PRODUTO",produto);
     campo(130,y,70,12,"ORDEM",ordem);
@@ -244,40 +295,40 @@ try {
     campo(130,y,70,12,"OPERADOR","");
     y+=16;
 
-    // Busca número do rancho no IndexedDB antes de gerar PDF
-    const numeroRancho = await lerDB("rancho_num_" + ordem) || "";
+    const ranchoInfo = RANCHOS[ordem];
+    const numeroRancho = ranchoInfo ? ranchoInfo.numero : "";
 
-campo(10, y, 120, 12, "RANCHO", numeroRancho);
+    campo(10, y, 120, 12, "RANCHO", numeroRancho);
     y+=20;
 
     let colunas;
 
-if(linha.toUpperCase().includes("AREA LIQUIDA")){
+if(linha.toUpperCase().includes("AREA LIQUIDA")){{
     colunas = ["HORA INICIO","HORA FIM","N PALLETS","FD","RASGADOS","PARADAS"];
-} else {
+}} else {{
     colunas = ["HORA INICIO","HORA FIM","N PALLETS","SACOS (UN)","RASGADOS","PARADAS"];
-}
+}}
     let larguraTabela = 190/colunas.length;
     let alturaLinha = 8;
 
     pdf.setFont("helvetica","bold");
 
-    colunas.forEach((c,i)=>{
+    colunas.forEach((c,i)=>{{
         pdf.rect(10+i*larguraTabela,y,larguraTabela,alturaLinha);
         pdf.text(c,10+i*larguraTabela+1,y+5);
-    });
+    }});
 
     pdf.setFont("helvetica","normal");
     y+=alturaLinha;
 
     const limite = 210;
 
-    while(y < limite){
-        for(let j=0;j<colunas.length;j++){
+    while(y < limite){{
+        for(let j=0;j<colunas.length;j++){{
             pdf.rect(10+j*larguraTabela,y,larguraTabela,alturaLinha);
-        }
+        }}
         y+=alturaLinha;
-    }
+    }}
 
     y += 5;
     pdf.setFont("helvetica","bold");
@@ -298,133 +349,53 @@ if(linha.toUpperCase().includes("AREA LIQUIDA")){
     pdf.setFontSize(8);
     pdf.text("Nome / Assinatura", 10, y + 4);
 
+    if(ranchoInfo && ranchoInfo.base64){{
+        pdf.addPage();
+        pdf.setFont("helvetica","bold");
+        pdf.setFontSize(14);
+        pdf.text("RANCHO - Ordem " + ordem, 10, 15);
+        pdf.setFontSize(10);
+        pdf.setFont("helvetica","normal");
+        pdf.text("Número do Rancho: " + (ranchoInfo.numero || "Não informado"), 10, 25);
+        pdf.text("Arquivo: " + (ranchoInfo.nome || "rancho.pdf"), 10, 32);
+        pdf.text("(Abra o arquivo do rancho separadamente para visualizar o conteúdo completo)", 10, 42);
+    }}
+
     pdf.save("ordem_producao.pdf");
-}
+}}
 
-// Usa IndexedDB para guardar ranchos de forma persistente dentro do iframe
-const DB_NAME = "pcp_ranchos";
-const DB_VERSION = 1;
+function verRancho(ordem){{
+    const ranchoInfo = RANCHOS[ordem];
+    if(!ranchoInfo || !ranchoInfo.base64){{
+        alert("❌ Nenhum rancho anexado para essa ordem");
+        return;
+    }}
 
-function abrirDB(){
-    return new Promise((resolve, reject) => {
-        const req = indexedDB.open(DB_NAME, DB_VERSION);
-        req.onupgradeneeded = e => {
-            const db = e.target.result;
-            if(!db.objectStoreNames.contains("ranchos")){
-                db.createObjectStore("ranchos", { keyPath: "chave" });
-            }
-        };
-        req.onsuccess = e => resolve(e.target.result);
-        req.onerror = e => reject(e.target.error);
-    });
-}
-
-function salvarDB(chave, valor){
-    return abrirDB().then(db => {
-        return new Promise((resolve, reject) => {
-            const tx = db.transaction("ranchos", "readwrite");
-            tx.objectStore("ranchos").put({ chave, valor });
-            tx.oncomplete = resolve;
-            tx.onerror = e => reject(e.target.error);
-        });
-    });
-}
-
-function lerDB(chave){
-    return abrirDB().then(db => {
-        return new Promise((resolve, reject) => {
-            const tx = db.transaction("ranchos", "readonly");
-            const req = tx.objectStore("ranchos").get(chave);
-            req.onsuccess = e => resolve(e.target.result ? e.target.result.valor : null);
-            req.onerror = e => reject(e.target.error);
-        });
-    });
-}
-
-function anexarRancho(input, ordem){
-    const file = input.files[0];
-
-    if(file){
-        const reader = new FileReader();
-
-        reader.onload = function(e){
-            const base64 = e.target.result;
-
-            // tenta extrair número do rancho
-            let numeroRancho = "NÃO ENCONTRADO";
-
-try {
-    let texto = atob(base64.split(",")[1]);
-    let match = texto.match(/rancho\s*\(?\s*(\d+)/i);
-
-    if(match){
-        numeroRancho = match[1];
-    }
-} catch(e) {}
-
-// 👉 se não encontrou, deixa usuário informar (sem obrigar)
-if(numeroRancho === "NÃO ENCONTRADO"){
-    let manual = prompt("Número do rancho não identificado automaticamente. Digite manualmente:");
-
-    if(manual){
-        numeroRancho = manual;
-    }
-}
-
-// Salva no IndexedDB (persiste entre recargas do autorefresh)
-Promise.all([
-    salvarDB("rancho_" + ordem, base64),
-    salvarDB("rancho_num_" + ordem, numeroRancho)
-]).then(() => {
-    const el = document.getElementById("status_" + ordem);
-    if(el){
-        el.innerHTML = "✅ Rancho anexado";
-        el.style.color = "green";
-    }
-    alert("✅ Rancho anexado com sucesso");
-}).catch(() => {
-    alert("✅ Rancho carregado (sessão atual)");
-});
-        };
-
-        reader.readAsDataURL(file);
-    }
-}
-
-function verRancho(ordem){
-    lerDB("rancho_" + ordem).then(arquivo => {
-        if(!arquivo){
-            alert("❌ Nenhum rancho anexado para essa ordem");
-            return;
-        }
-
-        const novaAba = window.open("", "_blank");
-novaAba.document.write(`
+    const dataUrl = "data:application/pdf;base64," + ranchoInfo.base64;
+    const novaAba = window.open("", "_blank");
+    novaAba.document.write(`
     <html>
-    <head><title>Rancho</title></head>
+    <head><title>Rancho - Ordem ${{ordem}}</title></head>
     <body style="margin:0">
-        <iframe src="${arquivo}" width="100%" height="100%"></iframe>
+        <iframe src="${{dataUrl}}" width="100%" height="100%" style="border:none;"></iframe>
     </body>
     </html>
 `);
-novaAba.document.close();
-    });
-}
+    novaAba.document.close();
+}}
 
-window.onload = function(){
-    document.querySelectorAll("[id^='status_']").forEach(el => {
+window.onload = function(){{
+    document.querySelectorAll("[id^='status_']").forEach(el => {{
         let ordem = el.id.replace("status_", "");
-        lerDB("rancho_" + ordem).then(temRancho => {
-            if(temRancho){
-                el.innerHTML = "✅ Rancho anexado";
-                el.style.color = "green";
-            } else {
-                el.innerHTML = "❌ Nenhum rancho";
-                el.style.color = "red";
-            }
-        });
-    });
-};
+        if(RANCHOS[ordem]){{
+            el.innerHTML = "✅ Rancho: " + (RANCHOS[ordem].numero || "anexado");
+            el.style.color = "green";
+        }} else {{
+            el.innerHTML = "❌ Nenhum rancho";
+            el.style.color = "red";
+        }}
+    }});
+}};
 </script>
 </head>
 
@@ -479,7 +450,6 @@ for linha, datas in estrutura.items():
 
                 itens_filtrados.append(item)
 
-        # ✅ posição correta
         if not itens_filtrados:
             continue
 
@@ -508,6 +478,13 @@ for linha, datas in estrutura.items():
             else:
                 classe = "pendente"
 
+            tem_rancho = ordem in ranchos_atuais
+            status_rancho_html = (
+                f'<span style="color:green;font-size:11px;">✅ Rancho: {ranchos_atuais[ordem]["numero"]}</span>'
+                if tem_rancho else
+                '<span style="color:red;font-size:11px;">❌ Nenhum rancho</span>'
+            )
+
             bloco += f"""
             <div class='card {classe}'>
             <b>{produto}</b><br>
@@ -530,13 +507,10 @@ for linha, datas in estrutura.items():
 
             <br><br>
 
-            <label style="font-size:12px;">📎 Rancho:</label><br>
-            <input type="file" accept="application/pdf"
-            onchange="anexarRancho(this, '{ordem}')"
-            style="font-size:11px;">
+            {status_rancho_html}
             <br>
             <button onclick="verRancho('{ordem}')">👁 Ver Rancho</button>
-            <div id="status_{ordem}" style="font-size:11px; margin-top:5px;"></div>
+            <div id="status_{ordem}" style="font-size:11px; margin-top:3px;"></div>
             </div>
             """
 
