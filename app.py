@@ -5,8 +5,8 @@ import csv
 from io import StringIO
 from datetime import datetime, date
 import json
-import os
-import base64
+
+APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby0sYky_AQVQN7NMv0MK55UngaBm7ayey1mJB37BE7lB6rNjmUvUJ68FD0-qsPe-vgT/exec"
 
 st_autorefresh(interval=60000)
 st.set_page_config(layout="wide")
@@ -29,47 +29,16 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# ─── RANCHO COMPARTILHADO ──────────────────────────────────────────────
-RANCHO_FILE = "ranchos_compartilhados.json"
-
+# ─── CARREGA RANCHOS DO GOOGLE SHEETS ─────────────────────────────────
+@st.cache_data(ttl=60)
 def carregar_ranchos():
-    if os.path.exists(RANCHO_FILE):
-        try:
-            with open(RANCHO_FILE, "r") as f:
-                return json.load(f)
-        except:
-            return {}
-    return {}
+    try:
+        r = requests.get(APPS_SCRIPT_URL, params={"acao": "listar"}, timeout=10)
+        return r.json()
+    except:
+        return {}
 
-def salvar_ranchos(dados):
-    with open(RANCHO_FILE, "w") as f:
-        json.dump(dados, f)
-
-if "ranchos" not in st.session_state:
-    st.session_state.ranchos = carregar_ranchos()
-
-# ─── UPLOAD GLOBAL DE RANCHO ──────────────────────────────────────────
-with st.expander("📎 Anexar Rancho (visível para todos)", expanded=False):
-    col_up1, col_up2, col_up3 = st.columns([2, 2, 1])
-    ordem_rancho = col_up1.text_input("Número da Ordem", key="ordem_rancho_input")
-    numero_rancho = col_up2.text_input("Número do Rancho", key="numero_rancho_input")
-    arquivo_rancho = col_up3.file_uploader("PDF do Rancho", type=["pdf"], key="upload_rancho", label_visibility="collapsed")
-
-    if st.button("✅ Salvar Rancho", key="btn_salvar_rancho"):
-        if ordem_rancho and arquivo_rancho:
-            bytes_data = arquivo_rancho.read()
-            b64 = base64.b64encode(bytes_data).decode("utf-8")
-            dados_ranchos = carregar_ranchos()
-            dados_ranchos[ordem_rancho] = {
-                "base64": b64,
-                "numero": numero_rancho or "Não informado",
-                "nome": arquivo_rancho.name
-            }
-            salvar_ranchos(dados_ranchos)
-            st.session_state.ranchos = dados_ranchos
-            st.success(f"✅ Rancho da ordem {ordem_rancho} salvo com sucesso! Visível para todos.")
-        else:
-            st.warning("Informe o número da ordem e selecione o PDF do rancho.")
+ranchos_atuais = carregar_ranchos()
 
 # ─── DADOS GOOGLE SHEETS ──────────────────────────────────────────────
 sheet_id = "1eQHvLVw-WLsA4UruaM6GThcy0dgb5ONNAn8AZ_KwBuU"
@@ -125,7 +94,6 @@ for item in dados_total:
     nova_data = str(item.get("Nova Data", "")).strip()
     turno = item.get("Turno", "Sem Turno")
     data_usar = nova_data if nova_data else data_original
-
     estrutura.setdefault(linha, {}).setdefault(data_usar, {}).setdefault(turno, []).append(item)
 
 col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
@@ -160,15 +128,17 @@ mostrar_todas = colb2.checkbox("Mostrar todas as datas", value=True)
 
 data_sel = data_input.strftime("%d/%m/%Y")
 
-# ─── MONTA JSON DOS RANCHOS PARA O JS ─────────────────────────────────
-ranchos_atuais = st.session_state.ranchos
-ranchos_json = json.dumps(ranchos_atuais)
+# ─── JSON DOS RANCHOS PARA O JS ────────────────────────────────────────
+ranchos_meta_json = json.dumps({k: {"numero": v.get("numero",""), "nome": v.get("nome","")} for k, v in ranchos_atuais.items()})
+ranchos_b64_json  = json.dumps({k: v.get("base64","") for k, v in ranchos_atuais.items()})
+apps_script_url   = APPS_SCRIPT_URL
 
 html = f"""
 <html>
 <head>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 
 <style>
 body {{ font-family: 'Segoe UI'; background: #f5f7fa; margin: 20px; }}
@@ -196,329 +166,4 @@ body {{ font-family: 'Segoe UI'; background: #f5f7fa; margin: 20px; }}
 .pendente {{ border-left: 5px solid #f5b7b1; background: #fdf2f2; }}
 .finalizado {{ border-left: 5px solid #a9dfbf; background: #f3fbf6; }}
 .reprogramado {{ border-left: 5px solid #d7bde2; background: #f8f4fb; }}
-.liberada {{ border-left: 5px solid #f9e79f; background: #fef9e7; }}
-
-button {{
-    margin-top: 8px;
-    padding: 6px 10px;
-    border: none;
-    border-radius: 6px;
-    background: #2c3e50;
-    color: white;
-}}
-</style>
-
-<script>
-// Ranchos compartilhados vindos do servidor (visíveis para todos)
-const RANCHOS = {ranchos_json};
-
-async function exportarPagina(){{
-    const {{ jsPDF }} = window.jspdf;
-    const elemento = document.getElementById("conteudo");
-    const canvas = await html2canvas(elemento, {{ scale: 2 }});
-    const imgData = canvas.toDataURL("image/png");
-
-    const pdf = new jsPDF('p','mm','a4');
-    const largura = 210;
-    const altura = (canvas.height * largura) / canvas.width;
-
-    pdf.addImage(imgData, 'PNG', 0, 0, largura, altura);
-    pdf.save("pagina_completa.pdf");
-}}
-
-async function exportarCard(produto, ordem, turno, qtde, pendente, status, data, linha){{
-    const {{ jsPDF }} = window.jspdf;
-    const pdf = new jsPDF('p','mm','a4');
-
-    let y = 10;
-
-    const logoUrl = "https://raw.githubusercontent.com/cavalcante-creator/Programa-o-pcp-dashboard/main/COL_LOGO_8.png";
-
-try {{
-    const img = await fetch(logoUrl);
-    const blob = await img.blob();
-
-    const reader = new FileReader();
-
-    await new Promise(resolve => {{
-        reader.onloadend = resolve;
-        reader.readAsDataURL(blob);
-    }});
-
-    const base64 = reader.result;
-    const props = pdf.getImageProperties(base64);
-
-    const largura = 30;
-    const altura = (props.height * largura) / props.width;
-
-    pdf.addImage(base64, 'PNG', 10, y, largura, altura);
-
-}} catch(e){{}}
-
-    pdf.setFont("helvetica","bold");
-    pdf.setFontSize(16);
-    pdf.text("ORDEM DE PRODUÇÃO", 70, y + 10);
-
-    y += 20;
-
-    pdf.setFillColor(44,62,80);
-    pdf.rect(10, y, 190, 8, 'F');
-
-    pdf.setTextColor(255,255,255);
-    pdf.text("DATA: " + data, 15, y + 5.5);
-    pdf.text("LINHA: " + linha, 120, y + 5.5);
-
-    pdf.setTextColor(0,0,0);
-    y += 18;
-
-    function campo(x,y,w,h,t,v){{
-        pdf.setFontSize(8);
-        pdf.setFont("helvetica","bold");
-        pdf.text(t,x,y-1);
-        pdf.rect(x,y,w,h);
-        pdf.setFont("helvetica","normal");
-        pdf.setFontSize(10);
-        let linhas = pdf.splitTextToSize(v, w - 4);
-        pdf.text(linhas, x+2, y+6);
-    }}
-
-    campo(10,y,120,12,"PRODUTO",produto);
-    campo(130,y,70,12,"ORDEM",ordem);
-    y+=16;
-
-    campo(10,y,60,12,"TURNO",turno);
-    campo(70,y,60,12,"QUANTIDADE PROGRAMADA",qtde);
-    campo(130,y,70,12,"QUANTIDADE PENDENTE",pendente);
-    y+=16;
-
-    campo(10,y,120,12,"STATUS",status);
-    campo(130,y,70,12,"OPERADOR","");
-    y+=16;
-
-    const ranchoInfo = RANCHOS[ordem];
-    const numeroRancho = ranchoInfo ? ranchoInfo.numero : "";
-
-    campo(10, y, 120, 12, "RANCHO", numeroRancho);
-    y+=20;
-
-    let colunas;
-
-if(linha.toUpperCase().includes("AREA LIQUIDA")){{
-    colunas = ["HORA INICIO","HORA FIM","N PALLETS","FD","RASGADOS","PARADAS"];
-}} else {{
-    colunas = ["HORA INICIO","HORA FIM","N PALLETS","SACOS (UN)","RASGADOS","PARADAS"];
-}}
-    let larguraTabela = 190/colunas.length;
-    let alturaLinha = 8;
-
-    pdf.setFont("helvetica","bold");
-
-    colunas.forEach((c,i)=>{{
-        pdf.rect(10+i*larguraTabela,y,larguraTabela,alturaLinha);
-        pdf.text(c,10+i*larguraTabela+1,y+5);
-    }});
-
-    pdf.setFont("helvetica","normal");
-    y+=alturaLinha;
-
-    const limite = 210;
-
-    while(y < limite){{
-        for(let j=0;j<colunas.length;j++){{
-            pdf.rect(10+j*larguraTabela,y,larguraTabela,alturaLinha);
-        }}
-        y+=alturaLinha;
-    }}
-
-    y += 5;
-    pdf.setFont("helvetica","bold");
-    pdf.text("OBSERVAÇÕES:", 10, y);
-
-    y += 3;
-    pdf.rect(10, y, 190, 30);
-
-    y += 45;
-
-    pdf.setFont("helvetica","bold");
-    pdf.text("ASSINATURA DO OPERADOR:", 10, y);
-
-    y += 10;
-    pdf.line(10, y, 100, y);
-
-    pdf.setFont("helvetica","normal");
-    pdf.setFontSize(8);
-    pdf.text("Nome / Assinatura", 10, y + 4);
-
-    if(ranchoInfo && ranchoInfo.base64){{
-        pdf.addPage();
-        pdf.setFont("helvetica","bold");
-        pdf.setFontSize(14);
-        pdf.text("RANCHO - Ordem " + ordem, 10, 15);
-        pdf.setFontSize(10);
-        pdf.setFont("helvetica","normal");
-        pdf.text("Número do Rancho: " + (ranchoInfo.numero || "Não informado"), 10, 25);
-        pdf.text("Arquivo: " + (ranchoInfo.nome || "rancho.pdf"), 10, 32);
-        pdf.text("(Abra o arquivo do rancho separadamente para visualizar o conteúdo completo)", 10, 42);
-    }}
-
-    pdf.save("ordem_producao.pdf");
-}}
-
-function verRancho(ordem){{
-    const ranchoInfo = RANCHOS[ordem];
-    if(!ranchoInfo || !ranchoInfo.base64){{
-        alert("❌ Nenhum rancho anexado para essa ordem");
-        return;
-    }}
-
-    const dataUrl = "data:application/pdf;base64," + ranchoInfo.base64;
-    const novaAba = window.open("", "_blank");
-    novaAba.document.write(`
-    <html>
-    <head><title>Rancho - Ordem ${{ordem}}</title></head>
-    <body style="margin:0">
-        <iframe src="${{dataUrl}}" width="100%" height="100%" style="border:none;"></iframe>
-    </body>
-    </html>
-`);
-    novaAba.document.close();
-}}
-
-window.onload = function(){{
-    document.querySelectorAll("[id^='status_']").forEach(el => {{
-        let ordem = el.id.replace("status_", "");
-        if(RANCHOS[ordem]){{
-            el.innerHTML = "✅ Rancho: " + (RANCHOS[ordem].numero || "anexado");
-            el.style.color = "green";
-        }} else {{
-            el.innerHTML = "❌ Nenhum rancho";
-            el.style.color = "red";
-        }}
-    }});
-}};
-</script>
-</head>
-
-<body>
-
-<div style="margin-bottom:15px;">
-    <button onclick="exportarPagina()">📥 Baixar Página Completa</button>
-</div>
-
-<div id="conteudo">
-"""
-
-for linha, datas in estrutura.items():
-
-    if linha_sel != "Todas" and linha != linha_sel:
-        continue
-
-    bloco = f"<div class='linha'><h2>{linha}</h2>"
-    tem_linha = False
-
-    for data, turnos in datas.items():
-
-        if not mostrar_todas and data != data_sel:
-            continue
-
-        itens_filtrados = []
-
-        for turno, itens in turnos.items():
-
-            # 🔹 FILTRO DE TURNO
-            if turno_sel != "Todos" and turno != turno_sel:
-                continue
-
-            for item in itens:
-                ordem = item.get("Ordem", "")
-                produto = item.get("Produto", "")
-                status_original = item.get("Status", "")
-
-                status_limpo = limpar_status(status_original)
-
-                # 🔹 FILTRO DE STATUS
-                if status_sel != "Todos" and status_limpo != status_sel:
-                    continue
-
-                # 🔹 FILTRO ORDEM
-                if ordem_pesquisa and ordem_pesquisa not in ordem:
-                    continue
-
-                # 🔹 FILTRO PRODUTO
-                if produto_pesquisa and produto_pesquisa.lower() not in produto.lower():
-                    continue
-
-                itens_filtrados.append(item)
-
-        if not itens_filtrados:
-            continue
-
-        tem_linha = True
-
-        bloco += f"<h3>📅 {data}</h3><div class='cards'>"
-
-        for item in itens_filtrados:
-            produto = item.get("Produto", "")
-            ordem = item.get("Ordem", "")
-            status_original = item.get("Status", "")
-            qtde_total = item.get("Qtde Total", "0")
-            qtde_pendente = item.get("Qtde Pendente", "0")
-
-            total = to_float(qtde_total)
-            pendente = to_float(qtde_pendente)
-
-            status_lower = status_original.lower()
-
-            if "liberada" in status_lower:
-                classe = "liberada"
-            elif pendente == 0:
-                classe = "finalizado"
-            elif pendente < total:
-                classe = "producao"
-            else:
-                classe = "pendente"
-
-            tem_rancho = ordem in ranchos_atuais
-            status_rancho_html = (
-                f'<span style="color:green;font-size:11px;">✅ Rancho: {ranchos_atuais[ordem]["numero"]}</span>'
-                if tem_rancho else
-                '<span style="color:red;font-size:11px;">❌ Nenhum rancho</span>'
-            )
-
-            bloco += f"""
-            <div class='card {classe}'>
-            <b>{produto}</b><br>
-            Ordem: {ordem}<br>
-            Turno: {item.get("Turno","-")}<br>
-            Qtde: {qtde_total}<br>
-            Pendente: {qtde_pendente}<br>
-            Status: {status_original}<br>
-
-            <button onclick="exportarCard(
-                '{produto}',
-                '{ordem}',
-                '{item.get("Turno","-")}',
-                '{qtde_total}',
-                '{qtde_pendente}',
-                '{status_original}',
-                '{data}',
-                '{linha}'
-            )">📄 Gerar PDF</button>
-
-            <br><br>
-
-            {status_rancho_html}
-            <br>
-            <button onclick="verRancho('{ordem}')">👁 Ver Rancho</button>
-            <div id="status_{ordem}" style="font-size:11px; margin-top:3px;"></div>
-            </div>
-            """
-
-        bloco += "</div>"
-    bloco += "</div>"
-
-    if tem_linha:
-        html += bloco
-html += "</div></body></html>"
-
-st.components.v1.html(html, height=900, scrolling=True)
+.liberada {{ border-left: 5px solid #f
