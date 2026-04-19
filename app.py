@@ -29,28 +29,38 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# ─── ESCAPE SEGURO para valores dentro do HTML/JS ─────────────────────
 def esc(valor):
     return str(valor).replace("\\", "\\\\").replace("'", "\\'").replace('"', '\\"').replace("\n", " ").replace("\r", "")
 
-# ─── CARREGA RANCHOS DO GOOGLE SHEETS ─────────────────────────────────
-@st.cache_data(ttl=60)
 def carregar_ranchos():
     try:
-        r = requests.get(APPS_SCRIPT_URL, params={"acao": "listar"}, timeout=10)
-        return r.json()
-    except:
+        r = requests.get(
+            APPS_SCRIPT_URL,
+            params={
+                "acao": "listar",
+                "_ts": int(datetime.now().timestamp())
+            },
+            timeout=10
+        )
+        r.raise_for_status()
+        data = r.json()
+
+        if not isinstance(data, dict):
+            return {}
+
+        return {str(k).strip(): v for k, v in data.items()}
+    except Exception as e:
+        st.warning(f"Erro ao carregar ranchos: {e}")
         return {}
 
 ranchos_atuais = carregar_ranchos()
 
-# ─── DADOS GOOGLE SHEETS ──────────────────────────────────────────────
 sheet_id = "1eQHvLVw-WLsA4UruaM6GThcy0dgb5ONNAn8AZ_KwBuU"
 
 abas = [
-    "BASE_LINHA_1","BASE_LINHA_2","BASE_LINHA_3",
+    "BASE_LINHA_1", "BASE_LINHA_2", "BASE_LINHA_3",
     "BASE_AREA_LIQUIDA",
-    "BASE_REJUNTE_MAQUINA_1","BASE_REJUNTE_MAQUINA_2","BASE_REJUNTE_MAQUINA_3"
+    "BASE_REJUNTE_MAQUINA_1", "BASE_REJUNTE_MAQUINA_2", "BASE_REJUNTE_MAQUINA_3"
 ]
 
 dados_total = []
@@ -85,9 +95,12 @@ def limpar_status(s):
     if not s:
         return ""
     s = str(s).strip().upper()
-    if "AGUARDANDO" in s: return "AGUARDANDO"
-    if "PRODUÇÃO" in s: return "EM PRODUÇÃO"
-    if "LIBERADA" in s: return "LIBERADA"
+    if "AGUARDANDO" in s:
+        return "AGUARDANDO"
+    if "PRODUÇÃO" in s:
+        return "EM PRODUÇÃO"
+    if "LIBERADA" in s:
+        return "LIBERADA"
     return s
 
 estrutura = {}
@@ -132,11 +145,19 @@ mostrar_todas = colb2.checkbox("Mostrar todas as datas", value=True)
 
 data_sel = data_input.strftime("%d/%m/%Y")
 
-# ─── JSON DOS RANCHOS PARA O JS ────────────────────────────────────────
-ranchos_meta_json = json.dumps({k: {"numero": v.get("numero",""), "nome": v.get("nome","")} for k, v in ranchos_atuais.items()})
-ranchos_b64_json  = json.dumps({k: v.get("base64","") for k, v in ranchos_atuais.items()})
+ranchos_meta_json = json.dumps({
+    str(k).strip(): {
+        "numero": v.get("numero", ""),
+        "nome": v.get("nome", "")
+    }
+    for k, v in ranchos_atuais.items()
+})
 
-# ─── HTML BASE (sem f-string para o bloco JS) ─────────────────────────
+ranchos_b64_json = json.dumps({
+    str(k).strip(): v.get("base64", "")
+    for k, v in ranchos_atuais.items()
+})
+
 html_head = """
 <html>
 <head>
@@ -306,33 +327,28 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.setFontSize(8);
     pdf.text("Nome / Assinatura", 10, y + 4);
 
-    // ─── MESCLA O PDF DO RANCHO JUNTO usando pdf-lib ───────────────────
     const b64Rancho = RANCHOS_B64[ordem];
     if(b64Rancho){
         try {
             const { PDFDocument } = PDFLib;
-
-            // Converte o jsPDF atual para bytes
             const pdfPrincipalBytes = pdf.output('arraybuffer');
 
-            // Converte base64 do rancho para bytes
             const binaryStr = atob(b64Rancho);
             const ranchoBytes = new Uint8Array(binaryStr.length);
             for(let i = 0; i < binaryStr.length; i++){
                 ranchoBytes[i] = binaryStr.charCodeAt(i);
             }
 
-            // Mescla com pdf-lib
-            const docFinal   = await PDFDocument.load(pdfPrincipalBytes);
-            const docRancho  = await PDFDocument.load(ranchoBytes);
-            const paginas    = await docFinal.copyPages(docRancho, docRancho.getPageIndices());
+            const docFinal = await PDFDocument.load(pdfPrincipalBytes);
+            const docRancho = await PDFDocument.load(ranchoBytes);
+            const paginas = await docFinal.copyPages(docRancho, docRancho.getPageIndices());
             paginas.forEach(p => docFinal.addPage(p));
 
             const bytesFinais = await docFinal.save();
             const blob = new Blob([bytesFinais], { type: 'application/pdf' });
-            const url  = URL.createObjectURL(blob);
-            const a    = document.createElement('a');
-            a.href     = url;
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
             a.download = 'ordem_producao.pdf';
             a.click();
             URL.revokeObjectURL(url);
@@ -342,7 +358,6 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
         }
     }
 
-    // Sem rancho: baixa só a ordem
     pdf.save("ordem_producao.pdf");
 }
 
@@ -363,7 +378,10 @@ function anexarRancho(input, ordem){
     if(!file) return;
 
     const statusEl = document.getElementById("status_" + ordem);
-    if(statusEl){ statusEl.innerHTML = "⏳ Enviando..."; statusEl.style.color = "orange"; }
+    if(statusEl){
+        statusEl.innerHTML = "⏳ Enviando...";
+        statusEl.style.color = "orange";
+    }
 
     const reader = new FileReader();
     reader.onload = function(e){
@@ -372,7 +390,7 @@ function anexarRancho(input, ordem){
         let numeroRancho = "";
         try {
             const decoded = atob(b64);
-            const match = decoded.match(/rancho\s*\(?\s*(\d+)/i);
+            const match = decoded.match(/rancho\\s*\\(?\\s*(\\d+)/i);
             if(match) numeroRancho = match[1];
         } catch(err){}
 
@@ -380,24 +398,24 @@ function anexarRancho(input, ordem){
             numeroRancho = prompt("Número do rancho não identificado. Digite manualmente:") || "Não informado";
         }
 
-        // Salva no Google Sheets via Apps Script
         const url = new URL(APPS_SCRIPT_URL);
-        url.searchParams.set("acao",   "salvar");
-        url.searchParams.set("ordem",  ordem);
+        url.searchParams.set("acao", "salvar");
+        url.searchParams.set("ordem", ordem);
         url.searchParams.set("numero", numeroRancho);
-        url.searchParams.set("nome",   file.name);
-        url.searchParams.set("b64",    b64);
+        url.searchParams.set("nome", file.name);
+        url.searchParams.set("b64", b64);
+        url.searchParams.set("_ts", Date.now());
 
         fetch(url.toString(), { mode: "no-cors" }).then(() => {
             RANCHOS_META[ordem] = { numero: numeroRancho, nome: file.name };
-            RANCHOS_B64[ordem]  = b64;
+            RANCHOS_B64[ordem] = b64;
             if(statusEl){
                 statusEl.innerHTML = "✅ Rancho: " + numeroRancho;
                 statusEl.style.color = "green";
             }
         }).catch(() => {
             RANCHOS_META[ordem] = { numero: numeroRancho, nome: file.name };
-            RANCHOS_B64[ordem]  = b64;
+            RANCHOS_B64[ordem] = b64;
             if(statusEl){
                 statusEl.innerHTML = "✅ Rancho salvo (recarregue para confirmar)";
                 statusEl.style.color = "green";
@@ -429,15 +447,13 @@ window.onload = function(){
 <div id="conteudo">
 """
 
-# Substitui os placeholders com os valores reais (sem f-string no bloco JS)
 html_head = html_head.replace("__RANCHOS_META__", ranchos_meta_json)
-html_head = html_head.replace("__RANCHOS_B64__",  ranchos_b64_json)
+html_head = html_head.replace("__RANCHOS_B64__", ranchos_b64_json)
 html_head = html_head.replace("__APPS_SCRIPT_URL__", APPS_SCRIPT_URL)
 
 html = html_head
 
 for linha, datas in estrutura.items():
-
     if linha_sel != "Todas" and linha != linha_sel:
         continue
 
@@ -445,22 +461,20 @@ for linha, datas in estrutura.items():
     tem_linha = False
 
     for data, turnos in datas.items():
-
         if not mostrar_todas and data != data_sel:
             continue
 
         itens_filtrados = []
 
         for turno, itens in turnos.items():
-
             if turno_sel != "Todos" and turno != turno_sel:
                 continue
 
             for item in itens:
-                ordem          = item.get("Ordem", "")
-                produto        = item.get("Produto", "")
+                ordem = str(item.get("Ordem", "")).strip()
+                produto = item.get("Produto", "")
                 status_original = item.get("Status", "")
-                status_limpo   = limpar_status(status_original)
+                status_limpo = limpar_status(status_original)
 
                 if status_sel != "Todos" and status_limpo != status_sel:
                     continue
@@ -469,6 +483,12 @@ for linha, datas in estrutura.items():
                 if produto_pesquisa and produto_pesquisa.lower() not in produto.lower():
                     continue
 
+                if semanas_sel:
+                    semana_item = get_semana(item.get("Data", ""))
+                    if semana_item not in semanas_sel:
+                        continue
+
+                item["Ordem"] = ordem
                 itens_filtrados.append(item)
 
         if not itens_filtrados:
@@ -478,14 +498,14 @@ for linha, datas in estrutura.items():
         bloco += "<h3>📅 " + data + "</h3><div class='cards'>"
 
         for item in itens_filtrados:
-            produto        = item.get("Produto", "")
-            ordem          = item.get("Ordem", "")
+            produto = item.get("Produto", "")
+            ordem = str(item.get("Ordem", "")).strip()
             status_original = item.get("Status", "")
-            qtde_total     = item.get("Qtde Total", "0")
-            qtde_pendente  = item.get("Qtde Pendente", "0")
-            turno_item     = item.get("Turno", "-")
+            qtde_total = item.get("Qtde Total", "0")
+            qtde_pendente = item.get("Qtde Pendente", "0")
+            turno_item = item.get("Turno", "-")
 
-            total   = to_float(qtde_total)
+            total = to_float(qtde_total)
             pendente = to_float(qtde_pendente)
             status_lower = status_original.lower()
 
@@ -500,19 +520,18 @@ for linha, datas in estrutura.items():
 
             tem_rancho = ordem in ranchos_atuais
             if tem_rancho:
-                status_rancho_html = '<span style="color:green;font-size:11px;">✅ Rancho: ' + esc(ranchos_atuais[ordem].get("numero","")) + '</span>'
+                status_rancho_html = '<span style="color:green;font-size:11px;">✅ Rancho: ' + esc(ranchos_atuais[ordem].get("numero", "")) + '</span>'
             else:
                 status_rancho_html = '<span style="color:red;font-size:11px;">❌ Nenhum rancho</span>'
 
-            # Escapa todos os valores que vão para dentro do JS
-            p_esc  = esc(produto)
-            o_esc  = esc(ordem)
-            t_esc  = esc(turno_item)
+            p_esc = esc(produto)
+            o_esc = esc(ordem)
+            t_esc = esc(turno_item)
             qt_esc = esc(qtde_total)
             qp_esc = esc(qtde_pendente)
-            s_esc  = esc(status_original)
-            d_esc  = esc(data)
-            l_esc  = esc(linha)
+            s_esc = esc(status_original)
+            d_esc = esc(data)
+            l_esc = esc(linha)
 
             bloco += (
                 "<div class='card " + classe + "'>"
