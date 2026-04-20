@@ -308,7 +308,8 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.setFontSize(8);
     pdf.text("Nome / Assinatura", 10, y + 4);
 
-    const b64Rancho = RANCHOS_B64[ordem];
+    const link = RANCHOS_META[ordem]?.link;
+window.open(link, "_blank");
     if(b64Rancho){
         try {
             const { PDFDocument } = PDFLib;
