@@ -308,20 +308,27 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.setFontSize(8);
     pdf.text("Nome / Assinatura", 10, y + 4);
 
-    const link = RANCHOS_META[ordem]?.link;
-window.open(link, "_blank");
+    // ✅ CORRIGIDO: b64Rancho agora declarada corretamente
+    const b64Rancho = RANCHOS_B64[ordem] || null;
+
     if(b64Rancho){
         try {
             const { PDFDocument } = PDFLib;
+
             const pdfPrincipalBytes = pdf.output('arraybuffer');
+
+            // ✅ CORRIGIDO: conversão segura para Uint8Array
             const binaryStr = atob(b64Rancho);
             const ranchoBytes = new Uint8Array(binaryStr.length);
             for(let i = 0; i < binaryStr.length; i++){
                 ranchoBytes[i] = binaryStr.charCodeAt(i);
             }
-            const docFinal   = await PDFDocument.load(pdfPrincipalBytes);
-            const docRancho  = await PDFDocument.load(ranchoBytes);
-            const paginas    = await docFinal.copyPages(docRancho, docRancho.getPageIndices());
+
+            const docFinal  = await PDFDocument.load(pdfPrincipalBytes);
+            // ✅ CORRIGIDO: ignoreEncryption resolve falhas em PDFs grandes ou protegidos
+            const docRancho = await PDFDocument.load(ranchoBytes, { ignoreEncryption: true });
+
+            const paginas = await docFinal.copyPages(docRancho, docRancho.getPageIndices());
             paginas.forEach(p => docFinal.addPage(p));
 
             const bytesFinais = await docFinal.save();
@@ -331,10 +338,14 @@ window.open(link, "_blank");
             a.href     = url;
             a.download = 'ordem_producao.pdf';
             a.click();
-            URL.revokeObjectURL(url);
+
+            // ✅ CORRIGIDO: delay antes de revogar para garantir que o download iniciou
+            setTimeout(() => URL.revokeObjectURL(url), 3000);
             return;
+
         } catch(e){
             console.warn("Erro ao mesclar rancho:", e);
+            alert("⚠️ Não foi possível mesclar o rancho (PDF pode ser muito grande ou protegido). Baixando só a ordem...");
         }
     }
 
