@@ -318,7 +318,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     });
     pdf.setFont("helvetica","normal");
     y += altRow;
-    const limiteTabela = 170;
+    const limiteTabela = 150;
     while(y < limiteTabela){
         for(let j = 0; j < colunas.length; j++){
             pdf.rect(10 + j * largCol, y, largCol, altRow);
