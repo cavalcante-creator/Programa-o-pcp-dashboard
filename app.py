@@ -218,9 +218,9 @@ async function exportarPagina(){
 async function exportarCard(produto, ordem, turno, qtde, pendente, status, data, linha){
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF('p','mm','a4');
-    let y = 10;
+    let y = 6;
 
-    // ── Logo + Título ──
+    // ── Logo + Título (mesma linha, mais compacto) ──
     const logoUrl = "https://raw.githubusercontent.com/cavalcante-creator/Programa-o-pcp-dashboard/main/COL_LOGO_8.png";
     try {
         const img = await fetch(logoUrl);
@@ -229,17 +229,17 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
         await new Promise(resolve => { reader.onloadend = resolve; reader.readAsDataURL(blob); });
         const base64 = reader.result;
         const props = pdf.getImageProperties(base64);
-        const larg = 32;
+        const larg = 28;
         const alt = (props.height * larg) / props.width;
         pdf.addImage(base64, 'PNG', 10, y, larg, alt);
     } catch(e){}
 
     pdf.setFont("helvetica","bold");
-    pdf.setFontSize(15);
-    pdf.text("ORDEM DE PRODUÇÃO", 105, y + 10, { align: "center" });
-    y += 22;
+    pdf.setFontSize(14);
+    pdf.text("ORDEM DE PRODUÇÃO", 105, y + 8, { align: "center" });
+    y += 16;
 
-    // ── Faixa DATA / LINHA ──
+    // ── Faixa DATA / LINHA (mais perto do título) ──
     pdf.setFillColor(44,62,80);
     pdf.rect(10, y, 190, 8, 'F');
     pdf.setTextColor(255,255,255);
@@ -248,10 +248,10 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.text("DATA: " + data, 14, y + 5.5);
     pdf.text("LINHA: " + linha, 120, y + 5.5);
     pdf.setTextColor(0,0,0);
-    y += 20;
+    y += 11;
 
     // ── Helper: campo com label acima e borda ──
-    const CH = 11; // altura padrão dos campos
+    const CH = 11;
     function campo(x, yy, w, h, label, valor){
         pdf.setFontSize(6.8); pdf.setFont("helvetica","bold");
         pdf.text(label, x + 1, yy - 1.2);
@@ -261,26 +261,25 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
         pdf.text(ls, x + 3, yy + 6.5);
     }
 
-    // ── Linha 1: Produto | Ordem ──
+    // ── Produto | Ordem ──
     campo(10, y, 120, CH, "PRODUTO", produto);
     campo(130, y, 70, CH, "ORDEM", ordem);
     y += CH + 4;
 
-    // ── Linha 2: Turno | Qtde Prog | Qtde Pend ──
+    // ── Turno | Qtde Prog | Qtde Pend ──
     campo(10, y, 55, CH, "TURNO", turno);
     campo(65, y, 55, CH, "QUANTIDADE PROGRAMADA", qtde);
     campo(120, y, 80, CH, "QUANTIDADE PENDENTE", pendente);
     y += CH + 4;
 
-    // ── Linha 3: Status | Operador ──
+    // ── Status | Operador ──
     campo(10, y, 90, CH, "STATUS", status);
     campo(100, y, 100, CH, "OPERADOR", "");
     y += CH + 4;
 
-    // ── Linha 4: Rancho | Saldo Paletes ──
+    // ── Rancho | Saldo Paletes ──
     const meta = RANCHOS_META[ordem];
     const numeroRancho = meta ? meta.numero : "";
-
     const linhaNome = String(linha).toUpperCase().replace(/_/g," ").trim();
     const ehLinha123 = /^LINHA\s*[123]$/.test(linhaNome) || /LINHA\s*[123]\b/.test(linhaNome);
 
@@ -307,7 +306,6 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     } else {
         colunas = ["HORA INICIO","HORA FIM","N PALLETS","SACOS (UN)","RASGADOS","PARADAS"];
     }
-
     const largCol = 190 / colunas.length;
     const altRow = 7;
     pdf.setFont("helvetica","bold");
@@ -318,14 +316,13 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     });
     pdf.setFont("helvetica","normal");
     y += altRow;
-    const limiteTabela = 150;
+    const limiteTabela = 168;
     while(y < limiteTabela){
         for(let j = 0; j < colunas.length; j++){
             pdf.rect(10 + j * largCol, y, largCol, altRow);
         }
         y += altRow;
     }
-
     y += 4;
 
     // ── Observações ──
@@ -333,8 +330,22 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.setFontSize(8);
     pdf.text("OBSERVAÇÕES:", 10, y);
     y += 2;
-    pdf.rect(10, y, 190, 16);
-    y += 20;
+    pdf.rect(10, y, 190, 18);
+    y += 22;
+
+    // ── STATUS DA ORDEM (logo após observações) ──
+    pdf.setFillColor(235, 235, 235);
+    pdf.rect(10, y, 190, 9, 'F');
+    pdf.rect(10, y, 190, 9);
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(8);
+    pdf.text("STATUS DA ORDEM:", 13, y + 6);
+    pdf.rect(70, y + 2.5, 4, 4);
+    pdf.setFont("helvetica", "normal");
+    pdf.text("Ordem Finalizada", 76, y + 6);
+    pdf.rect(130, y + 2.5, 4, 4);
+    pdf.text("Ordem irá finalizar outro dia", 136, y + 6);
+    y += 14;
 
     // ── Faixa: Instruções ──
     pdf.setFillColor(44, 62, 80);
@@ -344,13 +355,13 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.setFont("helvetica", "bold");
     pdf.text("INSTRUÇÕES PARA CONTROLE DA PRODUÇÃO", 105, y + 5, { align: "center" });
     pdf.setTextColor(0, 0, 0);
-    y += 12;
+    y += 9;
 
     // ── Caixa amarela de instruções ──
     pdf.setFillColor(255, 249, 220);
-    pdf.rect(10, y, 190, 23, 'F');
+    pdf.rect(10, y, 190, 22, 'F');
     pdf.setDrawColor(200, 160, 0);
-    pdf.rect(10, y, 190, 23);
+    pdf.rect(10, y, 190, 22);
     pdf.setDrawColor(0, 0, 0);
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(7.5);
@@ -363,25 +374,9 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
         "Sinalizar abaixo se a ordem foi finalizada ou se sobrou material e continuará no próximo dia."
     ];
     instrucoes.forEach((txt, idx) => {
-        pdf.text(txt, 13, y + 10 + idx * 5);
+        pdf.text(txt, 13, y + 10 + idx * 4.5);
     });
-    y += 27;
-
-    // ── Status da Ordem ──
-    pdf.setFillColor(235, 235, 235);
-    pdf.rect(10, y, 190, 9, 'F');
-    pdf.rect(10, y, 190, 9);
-    pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(8);
-    pdf.text("STATUS DA ORDEM:", 13, y + 6);
-    // checkbox 1
-    pdf.rect(70, y + 2.5, 4, 4);
-    pdf.setFont("helvetica", "normal");
-    pdf.text("Ordem Finalizada", 76, y + 6);
-    // checkbox 2
-    pdf.rect(125, y + 2.5, 4, 4);
-    pdf.text("Ordem irá finalizar outro dia", 131, y + 6);
-    y += 13;
+    y += 26;
 
     // ── Faixa: Apontamento ──
     pdf.setFillColor(44, 62, 80);
@@ -391,9 +386,9 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.setFontSize(8.5);
     pdf.text("APONTAMENTO NO SISTEMA", 105, y + 5, { align: "center" });
     pdf.setTextColor(0, 0, 0);
-    y += 10;
+    y += 12;
 
-    // ── Linha: Apontado Sim/Não | Hora | Data ──
+    // ── Apontado Sim/Não | Hora | Data ──
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(8);
     pdf.text("Apontado no sistema:", 10, y + 4.5);
@@ -407,14 +402,14 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.rect(112, y, 35, 7);
     pdf.text("Data:", 152, y + 4.5);
     pdf.rect(163, y, 37, 7);
-    y += 15;
+    y += 18;
 
-    // ── Assinaturas ──
+    // ── Assinaturas (mais espaço) ──
     pdf.setFont("helvetica","bold");
     pdf.setFontSize(8);
     pdf.text("RESP. APONTAMENTO:", 10, y);
     pdf.text("ASSINATURA DO OPERADOR:", 112, y);
-    y += 12;
+    y += 14;
     pdf.line(10, y, 100, y);
     pdf.line(112, y, 200, y);
     pdf.setFont("helvetica","normal");
