@@ -407,7 +407,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.rect(112, y, 35, 7);
     pdf.text("Data:", 152, y + 4.5);
     pdf.rect(163, y, 37, 7);
-    y += 12;
+    y += 15;
 
     // ── Assinaturas ──
     pdf.setFont("helvetica","bold");
