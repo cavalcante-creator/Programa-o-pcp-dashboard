@@ -331,7 +331,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.text("OBSERVAÇÕES:", 10, y);
     y += 2;
     pdf.rect(10, y, 190, 18);
-    y += 22;
+    y += 19;
 
     // ── STATUS DA ORDEM (logo após observações) ──
     pdf.setFillColor(235, 235, 235);
