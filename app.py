@@ -248,7 +248,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.text("DATA: " + data, 14, y + 5.5);
     pdf.text("LINHA: " + linha, 120, y + 5.5);
     pdf.setTextColor(0,0,0);
-    y += 11;
+    y += 20;
 
     // ── Helper: campo com label acima e borda ──
     const CH = 11; // altura padrão dos campos
