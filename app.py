@@ -268,6 +268,24 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     const meta = RANCHOS_META[ordem];
     const numeroRancho = meta ? meta.numero : "";
     campo(10, y, 120, 12, "RANCHO", numeroRancho);
+
+    // ─── CÁLCULO DE PALETES (apenas LINHA 1, 2 e 3) ───
+    const ehLinhaNumero = /LINHA\s*[123]\b/i.test(linha);
+    if(ehLinhaNumero){
+        const SC_POR_PALETE = 88;
+        const qtdePendNum = parseFloat(String(pendente).replace(/\./g,"").replace(",",".")) || 0;
+        const qtdeTotalNum = parseFloat(String(qtde).replace(/\./g,"").replace(",",".")) || 0;
+        const saldoSc = qtdePendNum > 0 ? qtdePendNum : qtdeTotalNum;
+        const paletesFechados = Math.floor(saldoSc / SC_POR_PALETE);
+        const scRestantes = Math.round(saldoSc % SC_POR_PALETE);
+        let textoSaldo = "";
+        if(scRestantes > 0){
+            textoSaldo = paletesFechados + " paletes fechados + " + scRestantes + " sc";
+        } else {
+            textoSaldo = paletesFechados + " paletes fechados";
+        }
+        campo(130, y, 70, 12, "SALDO EM PALETES (88 sc)", textoSaldo);
+    }
     y+=20;
 
     let colunas;
@@ -286,8 +304,8 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     });
     pdf.setFont("helvetica","normal");
     y+=alturaLinha;
-    const limite = 210;
-    while(y < limite){
+    const limiteTabela = 185;
+    while(y < limiteTabela){
         for(let j=0;j<colunas.length;j++){
             pdf.rect(10+j*larguraTabela,y,larguraTabela,alturaLinha);
         }
@@ -296,10 +314,14 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
 
     y += 5;
     pdf.setFont("helvetica","bold");
+    pdf.setFontSize(9);
     pdf.text("OBSERVAÇÕES:", 10, y);
     y += 3;
-    pdf.rect(10, y, 190, 20);
-    y += 28;
+    pdf.rect(10, y, 190, 25);
+
+    // ─── NOVA PÁGINA: INSTRUÇÕES + APONTAMENTO ───
+    pdf.addPage();
+    y = 15;
 
     // ─── BLOCO DE INSTRUÇÕES ───
     pdf.setFillColor(44, 62, 80);
