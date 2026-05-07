@@ -218,8 +218,9 @@ async function exportarPagina(){
 async function exportarCard(produto, ordem, turno, qtde, pendente, status, data, linha){
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF('p','mm','a4');
-    let y = 10;
+    let y = 8;
 
+    // Logo
     const logoUrl = "https://raw.githubusercontent.com/cavalcante-creator/Programa-o-pcp-dashboard/main/COL_LOGO_8.png";
     try {
         const img = await fetch(logoUrl);
@@ -228,188 +229,184 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
         await new Promise(resolve => { reader.onloadend = resolve; reader.readAsDataURL(blob); });
         const base64 = reader.result;
         const props = pdf.getImageProperties(base64);
-        const larg = 30;
+        const larg = 28;
         const alt = (props.height * larg) / props.width;
         pdf.addImage(base64, 'PNG', 10, y, larg, alt);
     } catch(e){}
 
     pdf.setFont("helvetica","bold");
-    pdf.setFontSize(16);
-    pdf.text("ORDEM DE PRODUÇÃO", 70, y + 10);
-    y += 20;
-
-    pdf.setFillColor(44,62,80);
-    pdf.rect(10, y, 190, 8, 'F');
-    pdf.setTextColor(255,255,255);
-    pdf.text("DATA: " + data, 15, y + 5.5);
-    pdf.text("LINHA: " + linha, 120, y + 5.5);
-    pdf.setTextColor(0,0,0);
+    pdf.setFontSize(14);
+    pdf.text("ORDEM DE PRODUÇÃO", 105, y + 9, { align: "center" });
     y += 18;
 
-    function campo(x,y,w,h,t,v){
-        pdf.setFontSize(8); pdf.setFont("helvetica","bold");
-        pdf.text(t,x,y-1); pdf.rect(x,y,w,h);
-        pdf.setFont("helvetica","normal"); pdf.setFontSize(10);
-        let linhas = pdf.splitTextToSize(String(v), w - 4);
-        pdf.text(linhas, x+2, y+6);
+    // Faixa DATA / LINHA
+    pdf.setFillColor(44,62,80);
+    pdf.rect(10, y, 190, 7, 'F');
+    pdf.setTextColor(255,255,255);
+    pdf.setFontSize(8);
+    pdf.text("DATA: " + data, 14, y + 5);
+    pdf.text("LINHA: " + linha, 120, y + 5);
+    pdf.setTextColor(0,0,0);
+    y += 10;
+
+    // Função campo compacta (h=10)
+    function campo(x, yy, w, h, t, v){
+        pdf.setFontSize(7); pdf.setFont("helvetica","bold");
+        pdf.text(t, x, yy - 1); pdf.rect(x, yy, w, h);
+        pdf.setFont("helvetica","normal"); pdf.setFontSize(9);
+        let ls = pdf.splitTextToSize(String(v), w - 3);
+        pdf.text(ls, x + 2, yy + 5.5);
     }
 
-    campo(10,y,120,12,"PRODUTO",produto);
-    campo(130,y,70,12,"ORDEM",ordem);
-    y+=16;
-    campo(10,y,60,12,"TURNO",turno);
-    campo(70,y,60,12,"QUANTIDADE PROGRAMADA",qtde);
-    campo(130,y,70,12,"QUANTIDADE PENDENTE",pendente);
-    y+=16;
-    campo(10,y,120,12,"STATUS",status);
-    campo(130,y,70,12,"OPERADOR","");
-    y+=16;
+    // Campos de cabeçalho
+    campo(10, y, 120, 10, "PRODUTO", produto);
+    campo(130, y, 70, 10, "ORDEM", ordem);
+    y += 13;
+    campo(10, y, 55, 10, "TURNO", turno);
+    campo(65, y, 55, 10, "QUANTIDADE PROGRAMADA", qtde);
+    campo(120, y, 80, 10, "QUANTIDADE PENDENTE", pendente);
+    y += 13;
+    campo(10, y, 90, 10, "STATUS", status);
+    campo(100, y, 100, 10, "OPERADOR", "");
+    y += 13;
 
     const meta = RANCHOS_META[ordem];
     const numeroRancho = meta ? meta.numero : "";
-    campo(10, y, 120, 12, "RANCHO", numeroRancho);
 
-    // ─── CÁLCULO DE PALETES (apenas LINHA 1, 2 e 3) ───
-    const ehLinhaNumero = /LINHA\s*[123]\b/i.test(linha);
-    if(ehLinhaNumero){
+    // ─── CÁLCULO DE PALETES (LINHA 1, 2 e 3) ───
+    const linhaNome = String(linha).toUpperCase().replace(/_/g," ").trim();
+    const ehLinha123 = /^LINHA\s*[123]$/.test(linhaNome) || /LINHA\s*[123]\b/.test(linhaNome);
+
+    if(ehLinha123){
         const SC_POR_PALETE = 88;
-        const qtdePendNum = parseFloat(String(pendente).replace(/\./g,"").replace(",",".")) || 0;
-        const qtdeTotalNum = parseFloat(String(qtde).replace(/\./g,"").replace(",",".")) || 0;
-        const saldoSc = qtdePendNum > 0 ? qtdePendNum : qtdeTotalNum;
+        const toNum = v => parseFloat(String(v).replace(/\./g,"").replace(",",".")) || 0;
+        const saldoSc = toNum(pendente) > 0 ? toNum(pendente) : toNum(qtde);
         const paletesFechados = Math.floor(saldoSc / SC_POR_PALETE);
         const scRestantes = Math.round(saldoSc % SC_POR_PALETE);
-        let textoSaldo = "";
-        if(scRestantes > 0){
-            textoSaldo = paletesFechados + " paletes fechados + " + scRestantes + " sc";
-        } else {
-            textoSaldo = paletesFechados + " paletes fechados";
-        }
-        campo(130, y, 70, 12, "SALDO EM PALETES (88 sc)", textoSaldo);
+        const textoSaldo = scRestantes > 0
+            ? paletesFechados + " pal. fechados + " + scRestantes + " sc"
+            : paletesFechados + " paletes fechados";
+        campo(10, y, 90, 10, "RANCHO", numeroRancho);
+        campo(100, y, 100, 10, "SALDO EM PALETES (88 sc/pal.)", textoSaldo);
+    } else {
+        campo(10, y, 190, 10, "RANCHO", numeroRancho);
     }
-    y+=20;
+    y += 13;
 
+    // Tabela de apontamento de horas
     let colunas;
-    if(linha.toUpperCase().includes("AREA LIQUIDA")){
+    if(linhaNome.includes("AREA LIQUIDA")){
         colunas = ["HORA INICIO","HORA FIM","N PALLETS","FD","RASGADOS","PARADAS"];
     } else {
         colunas = ["HORA INICIO","HORA FIM","N PALLETS","SACOS (UN)","RASGADOS","PARADAS"];
     }
 
-    let larguraTabela = 190/colunas.length;
-    let alturaLinha = 8;
+    const largCol = 190 / colunas.length;
+    const altLinha = 7;
     pdf.setFont("helvetica","bold");
-    colunas.forEach((c,i)=>{
-        pdf.rect(10+i*larguraTabela,y,larguraTabela,alturaLinha);
-        pdf.text(c,10+i*larguraTabela+1,y+5);
+    pdf.setFontSize(6.5);
+    colunas.forEach((c, i) => {
+        pdf.rect(10 + i * largCol, y, largCol, altLinha);
+        pdf.text(c, 10 + i * largCol + 1, y + 4.5);
     });
     pdf.setFont("helvetica","normal");
-    y+=alturaLinha;
-    const limiteTabela = 185;
+    y += altLinha;
+    const limiteTabela = 172;
     while(y < limiteTabela){
-        for(let j=0;j<colunas.length;j++){
-            pdf.rect(10+j*larguraTabela,y,larguraTabela,alturaLinha);
+        for(let j = 0; j < colunas.length; j++){
+            pdf.rect(10 + j * largCol, y, largCol, altLinha);
         }
-        y+=alturaLinha;
+        y += altLinha;
     }
 
-    y += 5;
+    // Observações (compacto)
     pdf.setFont("helvetica","bold");
-    pdf.setFontSize(9);
-    pdf.text("OBSERVAÇÕES:", 10, y);
-    y += 3;
-    pdf.rect(10, y, 190, 25);
-
-    // ─── NOVA PÁGINA: INSTRUÇÕES + APONTAMENTO ───
-    pdf.addPage();
-    y = 15;
-
-    // ─── BLOCO DE INSTRUÇÕES ───
-    pdf.setFillColor(44, 62, 80);
-    pdf.rect(10, y, 190, 7, 'F');
-    pdf.setTextColor(255, 255, 255);
-    pdf.setFontSize(9);
-    pdf.setFont("helvetica", "bold");
-    pdf.text("INSTRUÇÕES PARA CONTROLE DA PRODUÇÃO", 105, y + 5, { align: "center" });
-    pdf.setTextColor(0, 0, 0);
-    y += 10;
-
-    pdf.setFillColor(255, 249, 230);
-    pdf.rect(10, y, 190, 30, 'F');
-    pdf.setDrawColor(200, 160, 0);
-    pdf.rect(10, y, 190, 30);
-    pdf.setDrawColor(0, 0, 0);
-
-    pdf.setFont("helvetica", "bold");
     pdf.setFontSize(8);
-    pdf.text("ATENÇÃO:", 14, y + 5);
+    pdf.text("OBSERVAÇÕES:", 10, y + 4);
+    y += 1;
+    pdf.rect(10, y + 4, 190, 14);
+    y += 18;
+
+    // ─── INSTRUÇÕES ───
+    pdf.setFillColor(44, 62, 80);
+    pdf.rect(10, y, 190, 6, 'F');
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(8);
+    pdf.setFont("helvetica", "bold");
+    pdf.text("INSTRUÇÕES PARA CONTROLE DA PRODUÇÃO", 105, y + 4.3, { align: "center" });
+    pdf.setTextColor(0, 0, 0);
+    y += 8;
+
+    pdf.setFillColor(255, 249, 220);
+    pdf.rect(10, y, 190, 22, 'F');
+    pdf.setDrawColor(200, 160, 0);
+    pdf.rect(10, y, 190, 22);
+    pdf.setDrawColor(0, 0, 0);
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(7);
+    pdf.text("ATENÇÃO:", 13, y + 4.5);
     pdf.setFont("helvetica", "normal");
     const instrucoes = [
-        "Para melhor controle da produção diária, as ordens de fabricação devem ser fabricadas até a",
-        "quantidade final. Favor entregar esta folha ao responsável às 12:00 e às 17:15 para que possamos",
-        "realizar o apontamento da produção no sistema.",
-        "Favor sinalizar abaixo se o material acabou e a ordem foi finalizada, ou se sobrou material e a",
-        "ordem continuará no próximo dia."
+        "Para melhor controle da produção diária, as ordens de fabricação devem ser fabricadas até a quantidade final.",
+        "Favor entregar esta folha ao responsável às 12:00 e às 17:15 para realizarmos o apontamento no sistema.",
+        "Sinalizar abaixo se a ordem foi finalizada ou se sobrou material e continuará no próximo dia."
     ];
-    instrucoes.forEach((linha_txt, idx) => {
-        pdf.text(linha_txt, 14, y + 11 + (idx * 4.5));
+    instrucoes.forEach((txt, idx) => {
+        pdf.text(txt, 13, y + 9 + idx * 4.5);
     });
-    y += 34;
+    y += 25;
 
-    // ─── CHECKBOXES: STATUS DA ORDEM ───
-    pdf.setFillColor(240, 240, 240);
-    pdf.rect(10, y, 190, 10, 'F');
-    pdf.rect(10, y, 190, 10);
+    // ─── STATUS DA ORDEM ───
+    pdf.setFillColor(235, 235, 235);
+    pdf.rect(10, y, 190, 8, 'F');
+    pdf.rect(10, y, 190, 8);
     pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(8.5);
-    pdf.text("STATUS DA ORDEM:", 14, y + 6.5);
-
-    pdf.rect(72, y + 3, 4, 4);
+    pdf.setFontSize(7.5);
+    pdf.text("STATUS DA ORDEM:", 13, y + 5.3);
+    pdf.rect(68, y + 2.2, 3.5, 3.5);
     pdf.setFont("helvetica", "normal");
-    pdf.text("Ordem Finalizada", 78, y + 6.5);
+    pdf.text("Ordem Finalizada", 73, y + 5.3);
+    pdf.rect(120, y + 2.2, 3.5, 3.5);
+    pdf.text("Ordem irá finalizar outro dia", 125, y + 5.3);
+    y += 11;
 
-    pdf.rect(125, y + 3, 4, 4);
-    pdf.text("Ordem irá finalizar outro dia", 131, y + 6.5);
-    y += 14;
-
-    // ─── BLOCO DE APONTAMENTO ───
+    // ─── APONTAMENTO ───
     pdf.setFillColor(44, 62, 80);
-    pdf.rect(10, y, 190, 7, 'F');
+    pdf.rect(10, y, 190, 6, 'F');
     pdf.setTextColor(255, 255, 255);
     pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(9);
-    pdf.text("APONTAMENTO NO SISTEMA", 105, y + 5, { align: "center" });
+    pdf.setFontSize(8);
+    pdf.text("APONTAMENTO NO SISTEMA", 105, y + 4.3, { align: "center" });
     pdf.setTextColor(0, 0, 0);
-    y += 10;
+    y += 8;
 
     pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(8);
-    pdf.text("Apontado no sistema:", 10, y + 4);
-    pdf.rect(56, y + 1, 4, 4);
+    pdf.setFontSize(7.5);
+    pdf.text("Apontado:", 10, y + 4);
+    pdf.rect(32, y + 0.5, 3.5, 3.5);
     pdf.setFont("helvetica", "normal");
-    pdf.text("Sim", 62, y + 4.5);
-    pdf.rect(75, y + 1, 4, 4);
-    pdf.text("Não", 81, y + 4.5);
-    y += 10;
+    pdf.text("Sim", 37, y + 4);
+    pdf.rect(48, y + 0.5, 3.5, 3.5);
+    pdf.text("Não", 53, y + 4);
 
     pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(8);
-    pdf.text("Hora do Apontamento:", 10, y + 4);
-    pdf.rect(55, y, 40, 7);
-    pdf.text("Data do Apontamento:", 102, y + 4);
-    pdf.rect(147, y, 40, 7);
-    y += 14;
+    pdf.text("Hora:", 72, y + 4);
+    pdf.rect(83, y, 35, 6);
+    pdf.text("Data:", 122, y + 4);
+    pdf.rect(133, y, 35, 6);
+    y += 10;
 
     pdf.setFont("helvetica","bold");
-    pdf.setFontSize(8);
-    pdf.text("ASSINATURA DO RESPONSÁVEL PELO APONTAMENTO:", 10, y);
-    pdf.text("ASSINATURA DO OPERADOR:", 115, y);
-    y += 8;
-    pdf.line(10, y, 100, y);
-    pdf.line(115, y, 200, y);
-    pdf.setFont("helvetica","normal");
     pdf.setFontSize(7.5);
-    pdf.text("Nome / Assinatura", 10, y + 4);
-    pdf.text("Nome / Assinatura", 115, y + 4);
+    pdf.text("RESP. APONTAMENTO:", 10, y);
+    pdf.text("ASSINATURA OPERADOR:", 110, y);
+    y += 7;
+    pdf.line(10, y, 100, y);
+    pdf.line(110, y, 200, y);
+    pdf.setFont("helvetica","normal");
+    pdf.setFontSize(7);
+    pdf.text("Nome / Assinatura", 10, y + 3.5);
+    pdf.text("Nome / Assinatura", 110, y + 3.5);
 
     // ✅ CORRIGIDO: b64Rancho agora declarada corretamente
     const b64Rancho = RANCHOS_B64[ordem] || null;
