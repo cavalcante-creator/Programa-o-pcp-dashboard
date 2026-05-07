@@ -344,7 +344,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.setFont("helvetica", "bold");
     pdf.text("INSTRUÇÕES PARA CONTROLE DA PRODUÇÃO", 105, y + 5, { align: "center" });
     pdf.setTextColor(0, 0, 0);
-    y += 9;
+    y += 12;
 
     // ── Caixa amarela de instruções ──
     pdf.setFillColor(255, 249, 220);
