@@ -298,15 +298,96 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.setFont("helvetica","bold");
     pdf.text("OBSERVAÇÕES:", 10, y);
     y += 3;
-    pdf.rect(10, y, 190, 30);
-    y += 45;
-    pdf.setFont("helvetica","bold");
-    pdf.text("ASSINATURA DO OPERADOR:", 10, y);
+    pdf.rect(10, y, 190, 20);
+    y += 28;
+
+    // ─── BLOCO DE INSTRUÇÕES ───
+    pdf.setFillColor(44, 62, 80);
+    pdf.rect(10, y, 190, 7, 'F');
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(9);
+    pdf.setFont("helvetica", "bold");
+    pdf.text("INSTRUÇÕES PARA CONTROLE DA PRODUÇÃO", 105, y + 5, { align: "center" });
+    pdf.setTextColor(0, 0, 0);
     y += 10;
-    pdf.line(10, y, 100, y);
-    pdf.setFont("helvetica","normal");
+
+    pdf.setFillColor(255, 249, 230);
+    pdf.rect(10, y, 190, 30, 'F');
+    pdf.setDrawColor(200, 160, 0);
+    pdf.rect(10, y, 190, 30);
+    pdf.setDrawColor(0, 0, 0);
+
+    pdf.setFont("helvetica", "bold");
     pdf.setFontSize(8);
+    pdf.text("ATENÇÃO:", 14, y + 5);
+    pdf.setFont("helvetica", "normal");
+    const instrucoes = [
+        "Para melhor controle da produção diária, as ordens de fabricação devem ser fabricadas até a",
+        "quantidade final. Favor entregar esta folha ao responsável às 12:00 e às 17:15 para que possamos",
+        "realizar o apontamento da produção no sistema.",
+        "Favor sinalizar abaixo se o material acabou e a ordem foi finalizada, ou se sobrou material e a",
+        "ordem continuará no próximo dia."
+    ];
+    instrucoes.forEach((linha_txt, idx) => {
+        pdf.text(linha_txt, 14, y + 11 + (idx * 4.5));
+    });
+    y += 34;
+
+    // ─── CHECKBOXES: STATUS DA ORDEM ───
+    pdf.setFillColor(240, 240, 240);
+    pdf.rect(10, y, 190, 10, 'F');
+    pdf.rect(10, y, 190, 10);
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(8.5);
+    pdf.text("STATUS DA ORDEM:", 14, y + 6.5);
+
+    pdf.rect(72, y + 3, 4, 4);
+    pdf.setFont("helvetica", "normal");
+    pdf.text("Ordem Finalizada", 78, y + 6.5);
+
+    pdf.rect(125, y + 3, 4, 4);
+    pdf.text("Ordem irá finalizar outro dia", 131, y + 6.5);
+    y += 14;
+
+    // ─── BLOCO DE APONTAMENTO ───
+    pdf.setFillColor(44, 62, 80);
+    pdf.rect(10, y, 190, 7, 'F');
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(9);
+    pdf.text("APONTAMENTO NO SISTEMA", 105, y + 5, { align: "center" });
+    pdf.setTextColor(0, 0, 0);
+    y += 10;
+
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(8);
+    pdf.text("Apontado no sistema:", 10, y + 4);
+    pdf.rect(56, y + 1, 4, 4);
+    pdf.setFont("helvetica", "normal");
+    pdf.text("Sim", 62, y + 4.5);
+    pdf.rect(75, y + 1, 4, 4);
+    pdf.text("Não", 81, y + 4.5);
+    y += 10;
+
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(8);
+    pdf.text("Hora do Apontamento:", 10, y + 4);
+    pdf.rect(55, y, 40, 7);
+    pdf.text("Data do Apontamento:", 102, y + 4);
+    pdf.rect(147, y, 40, 7);
+    y += 14;
+
+    pdf.setFont("helvetica","bold");
+    pdf.setFontSize(8);
+    pdf.text("ASSINATURA DO RESPONSÁVEL PELO APONTAMENTO:", 10, y);
+    pdf.text("ASSINATURA DO OPERADOR:", 115, y);
+    y += 8;
+    pdf.line(10, y, 100, y);
+    pdf.line(115, y, 200, y);
+    pdf.setFont("helvetica","normal");
+    pdf.setFontSize(7.5);
     pdf.text("Nome / Assinatura", 10, y + 4);
+    pdf.text("Nome / Assinatura", 115, y + 4);
 
     // ✅ CORRIGIDO: b64Rancho agora declarada corretamente
     const b64Rancho = RANCHOS_B64[ordem] || null;
