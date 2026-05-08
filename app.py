@@ -220,7 +220,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     const pdf = new jsPDF('p','mm','a4');
     let y = 6;
 
-    // ── Logo + Título (mesma linha, mais compacto) ──
+    // ── Logo + Título ──
     const logoUrl = "https://raw.githubusercontent.com/cavalcante-creator/Programa-o-pcp-dashboard/main/COL_LOGO_8.png";
     try {
         const img = await fetch(logoUrl);
@@ -239,7 +239,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.text("ORDEM DE PRODUÇÃO", 105, y + 8, { align: "center" });
     y += 16;
 
-    // ── Faixa DATA / LINHA (mais perto do título) ──
+    // ── Faixa DATA / LINHA ──
     pdf.setFillColor(44,62,80);
     pdf.rect(10, y, 190, 8, 'F');
     pdf.setTextColor(255,255,255);
@@ -248,9 +248,9 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.text("DATA: " + data, 14, y + 5.5);
     pdf.text("LINHA: " + linha, 120, y + 5.5);
     pdf.setTextColor(0,0,0);
-    y += 11;
+    y += 15;  // ← AUMENTADO de 11 para 15
 
-    // ── Helper: campo com label acima e borda ──
+    // ── Helper: campo ──
     const CH = 11;
     function campo(x, yy, w, h, label, valor){
         pdf.setFontSize(6.8); pdf.setFont("helvetica","bold");
@@ -316,7 +316,9 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     });
     pdf.setFont("helvetica","normal");
     y += altRow;
-    const limiteTabela = 168;
+
+    // Tabela até y=155 (deixa espaço para rodapé fixo)
+    const limiteTabela = 155;
     while(y < limiteTabela){
         for(let j = 0; j < colunas.length; j++){
             pdf.rect(10 + j * largCol, y, largCol, altRow);
@@ -331,9 +333,9 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.text("OBSERVAÇÕES:", 10, y);
     y += 2;
     pdf.rect(10, y, 190, 18);
-    y += 15;
+    y += 20;
 
-    // ── STATUS DA ORDEM (logo após observações) ──
+    // ── STATUS DA ORDEM ──
     pdf.setFillColor(235, 235, 235);
     pdf.rect(10, y, 190, 9, 'F');
     pdf.rect(10, y, 190, 9);
@@ -345,101 +347,96 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.text("Ordem Finalizada", 76, y + 6);
     pdf.rect(130, y + 2.5, 4, 4);
     pdf.text("Ordem irá finalizar outro dia", 136, y + 6);
-    y += 14;
+
+    // ══════════════════════════════════════════
+    // RODAPÉ FIXO — posição absoluta na página
+    // ══════════════════════════════════════════
+    let yRodape = 210; // posição fixa, independente do conteúdo acima
 
     // ── Faixa: Instruções ──
     pdf.setFillColor(44, 62, 80);
-    pdf.rect(10, y, 190, 7, 'F');
+    pdf.rect(10, yRodape, 190, 7, 'F');
     pdf.setTextColor(255, 255, 255);
     pdf.setFontSize(8.5);
     pdf.setFont("helvetica", "bold");
-    pdf.text("INSTRUÇÕES PARA CONTROLE DA PRODUÇÃO", 105, y + 5, { align: "center" });
+    pdf.text("INSTRUÇÕES PARA CONTROLE DA PRODUÇÃO", 105, yRodape + 5, { align: "center" });
     pdf.setTextColor(0, 0, 0);
-    y += 9;
+    yRodape += 9;
 
     // ── Caixa amarela de instruções ──
     pdf.setFillColor(255, 249, 220);
-    pdf.rect(10, y, 190, 22, 'F');
+    pdf.rect(10, yRodape, 190, 22, 'F');
     pdf.setDrawColor(200, 160, 0);
-    pdf.rect(10, y, 190, 22);
+    pdf.rect(10, yRodape, 190, 22);
     pdf.setDrawColor(0, 0, 0);
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(7.5);
-    pdf.text("ATENÇÃO:", 13, y + 5);
+    pdf.text("ATENÇÃO:", 13, yRodape + 5);
     pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(7.5);
     const instrucoes = [
         "Para melhor controle da produção diária, as ordens de fabricação devem ser fabricadas até a quantidade final.",
         "Favor entregar esta folha ao responsável às 12:00 e às 17:15 para realizarmos o apontamento no sistema.",
         "Sinalizar abaixo se a ordem foi finalizada ou se sobrou material e continuará no próximo dia."
     ];
     instrucoes.forEach((txt, idx) => {
-        pdf.text(txt, 13, y + 10 + idx * 4.5);
+        pdf.text(txt, 13, yRodape + 10 + idx * 4.5);
     });
-    y += 26;
+    yRodape += 26;
 
     // ── Faixa: Apontamento ──
     pdf.setFillColor(44, 62, 80);
-    pdf.rect(10, y, 190, 7, 'F');
+    pdf.rect(10, yRodape, 190, 7, 'F');
     pdf.setTextColor(255, 255, 255);
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(8.5);
-    pdf.text("APONTAMENTO NO SISTEMA", 105, y + 5, { align: "center" });
+    pdf.text("APONTAMENTO NO SISTEMA", 105, yRodape + 5, { align: "center" });
     pdf.setTextColor(0, 0, 0);
-    y += 12;
+    yRodape += 12;
 
     // ── Apontado Sim/Não | Hora | Data ──
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(8);
-    pdf.text("Apontado no sistema:", 10, y + 4.5);
-    pdf.rect(57, y + 1, 4, 4);
+    pdf.text("Apontado no sistema:", 10, yRodape + 4.5);
+    pdf.rect(57, yRodape + 1, 4, 4);
     pdf.setFont("helvetica", "normal");
-    pdf.text("Sim", 63, y + 4.5);
-    pdf.rect(77, y + 1, 4, 4);
-    pdf.text("Não", 83, y + 4.5);
+    pdf.text("Sim", 63, yRodape + 4.5);
+    pdf.rect(77, yRodape + 1, 4, 4);
+    pdf.text("Não", 83, yRodape + 4.5);
     pdf.setFont("helvetica", "bold");
-    pdf.text("Hora:", 100, y + 4.5);
-    pdf.rect(112, y, 35, 7);
-    pdf.text("Data:", 152, y + 4.5);
-    pdf.rect(163, y, 37, 7);
-    y += 18;
+    pdf.text("Hora:", 100, yRodape + 4.5);
+    pdf.rect(112, yRodape, 35, 7);
+    pdf.text("Data:", 152, yRodape + 4.5);
+    pdf.rect(163, yRodape, 37, 7);
+    yRodape += 18;
 
-    // ── Assinaturas (mais espaço) ──
+    // ── Assinaturas ──
     pdf.setFont("helvetica","bold");
     pdf.setFontSize(8);
-    pdf.text("RESP. APONTAMENTO:", 10, y);
-    pdf.text("ASSINATURA DO OPERADOR:", 112, y);
-    y += 14;
-    pdf.line(10, y, 100, y);
-    pdf.line(112, y, 200, y);
+    pdf.text("RESP. APONTAMENTO:", 10, yRodape);
+    pdf.text("ASSINATURA DO OPERADOR:", 112, yRodape);
+    yRodape += 14;
+    pdf.line(10, yRodape, 100, yRodape);
+    pdf.line(112, yRodape, 200, yRodape);
     pdf.setFont("helvetica","normal");
     pdf.setFontSize(7.5);
-    pdf.text("Nome / Assinatura", 10, y + 4);
-    pdf.text("Nome / Assinatura", 112, y + 4);
+    pdf.text("Nome / Assinatura", 10, yRodape + 4);
+    pdf.text("Nome / Assinatura", 112, yRodape + 4);
 
-    // ✅ CORRIGIDO: b64Rancho agora declarada corretamente
+    // ── Rancho (merge PDF) ──
     const b64Rancho = RANCHOS_B64[ordem] || null;
-
     if(b64Rancho){
         try {
             const { PDFDocument } = PDFLib;
-
             const pdfPrincipalBytes = pdf.output('arraybuffer');
-
-            // ✅ CORRIGIDO: conversão segura para Uint8Array
             const binaryStr = atob(b64Rancho);
             const ranchoBytes = new Uint8Array(binaryStr.length);
             for(let i = 0; i < binaryStr.length; i++){
                 ranchoBytes[i] = binaryStr.charCodeAt(i);
             }
-
             const docFinal  = await PDFDocument.load(pdfPrincipalBytes);
-            // ✅ CORRIGIDO: ignoreEncryption resolve falhas em PDFs grandes ou protegidos
             const docRancho = await PDFDocument.load(ranchoBytes, { ignoreEncryption: true });
-
             const paginas = await docFinal.copyPages(docRancho, docRancho.getPageIndices());
             paginas.forEach(p => docFinal.addPage(p));
-
             const bytesFinais = await docFinal.save();
             const blob = new Blob([bytesFinais], { type: 'application/pdf' });
             const url  = URL.createObjectURL(blob);
@@ -447,14 +444,11 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
             a.href     = url;
             a.download = 'ordem_producao.pdf';
             a.click();
-
-            // ✅ CORRIGIDO: delay antes de revogar para garantir que o download iniciou
             setTimeout(() => URL.revokeObjectURL(url), 3000);
             return;
-
         } catch(e){
             console.warn("Erro ao mesclar rancho:", e);
-            alert("⚠️ Não foi possível mesclar o rancho (PDF pode ser muito grande ou protegido). Baixando só a ordem...");
+            alert("⚠️ Não foi possível mesclar o rancho. Baixando só a ordem...");
         }
     }
 
