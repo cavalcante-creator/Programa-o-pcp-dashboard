@@ -272,7 +272,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.text("DATA: " + data, ML + 5, y + 6);
     pdf.text("LINHA: " + String(linha).toUpperCase(), ML + 105, y + 6);
     pdf.setTextColor(0,0,0);
-    y += 15; 
+    y += 20; 
 
     // ════════════════════════════════════════
     // CAMPOS DE DADOS
