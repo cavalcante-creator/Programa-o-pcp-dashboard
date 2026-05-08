@@ -352,7 +352,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     // ════════════════════════════════════════
     const Y_OBS_LABEL = y + 6.5;
     const Y_OBS_BOX   = Y_OBS_LABEL + 3.5;
-    const ALT_OBS     = Y_RODAPE - Y_OBS_BOX - 15; 
+    const ALT_OBS     = Y_RODAPE - Y_OBS_BOX - 10; 
 
     pdf.setFont("helvetica","bold"); pdf.setFontSize(8.5);
     pdf.text("OBSERVAÇÕES:", ML, Y_OBS_LABEL);
