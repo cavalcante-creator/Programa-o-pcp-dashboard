@@ -404,7 +404,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.rect(145, yR, 38, 7);
     pdf.setDrawColor(0,0,0);
     
-    yR += 15; 
+    yR += 20; 
 
     // 3. ASSINATURAS
     pdf.setFont("helvetica","bold"); pdf.setFontSize(8.5);
