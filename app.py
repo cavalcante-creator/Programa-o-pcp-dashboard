@@ -377,7 +377,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.rect(125, yR + 2, 3.5, 3.5);
     pdf.text("Ordem irá finalizar outro dia", 130, yR + 5);
     
-    yR += 25; // Espaço para separar do próximo bloco
+    yR += 20; // Espaço para separar do próximo bloco
 
     // 2. ASSINATURAS (AGORA EM CIMA)
     pdf.setFont("helvetica","bold"); pdf.setFontSize(8.5);
