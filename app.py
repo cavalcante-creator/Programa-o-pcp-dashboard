@@ -383,7 +383,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.setFont("helvetica","bold"); pdf.setFontSize(8.5);
     pdf.text("RESP. APONTAMENTO:", ML, yR);
     pdf.text("ASSINATURA DO OPERADOR:", 108, yR);
-    yR += 8;
+    yR += 12;
     pdf.setDrawColor(150,150,150);
     pdf.line(ML, yR, 100, yR);
     pdf.line(108, yR, 200, yR);
@@ -392,7 +392,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.text("Nome / Assinatura", ML, yR + 4);
     pdf.text("Nome / Assinatura", 108, yR + 4);
     
-    yR += 22; // Espaço para separar do próximo bloco
+    yR += 18; // Espaço para separar do próximo bloco
 
     // 3. APONTAMENTO NO SISTEMA (AGORA EMBAIXO)
     pdf.setFillColor(235,235,235);
