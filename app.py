@@ -312,7 +312,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     } else {
         campo(ML, y, LARGURA, CH, "RANCHO", numeroRancho);
     }
-    y += CH + 8;
+    y += CH + 5;
 
     // ════════════════════════════════════════
     // TABELA DE HORAS (Reduzida para 10 linhas para liberar espaço)
