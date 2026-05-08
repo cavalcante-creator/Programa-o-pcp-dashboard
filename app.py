@@ -395,9 +395,9 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     yR += 18; // Espaço para separar do próximo bloco
 
     // 3. APONTAMENTO NO SISTEMA (AGORA EMBAIXO)
-    pdf.setFillColor(44,62,80);
+    pdf.setFillColor(235,235,235);
     pdf.rect(ML, yR, LARGURA, 7, 'F');
-    pdf.setTextColor(255,255,255);
+    pdf.setTextColor(0,0,0);
     pdf.setFont("helvetica","bold"); pdf.setFontSize(8.5);
     pdf.text("APONTAMENTO NO SISTEMA", 105, yR + 4.8, { align:"center" });
     pdf.setTextColor(0,0,0);
