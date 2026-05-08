@@ -265,7 +265,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
 
     // Faixa DATA / LINHA (MÁXIMA EVIDÊNCIA)
     pdf.setFillColor(44,62,80);
-    pdf.rect(ML, y, LARGURA, 12, 'F'); 
+    pdf.rect(ML, y, LARGURA, 10, 'F'); 
     pdf.setTextColor(255,255,255);
     pdf.setFontSize(13); // Fonte bem maior
     pdf.setFont("helvetica","bold");
