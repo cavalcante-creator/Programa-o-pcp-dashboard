@@ -225,8 +225,8 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     const PAGE_H  = 297;  // altura A4 em mm
     const MB      = 10;   // margem inferior
 
-    // ── Rodapé: Reduzido para dar espaço às observações ──
-    const RODAPE_TOTAL = 90; 
+    // ── Rodapé: Redimensionado para dar os vãos solicitados ──
+    const RODAPE_TOTAL = 100; 
     const Y_RODAPE = PAGE_H - MB - RODAPE_TOTAL; 
 
     // ── Helper: campo com label acima e borda ──
@@ -272,7 +272,9 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.text("DATA: " + data, ML + 5, y + 6);
     pdf.text("LINHA: " + String(linha).toUpperCase(), ML + 105, y + 6);
     pdf.setTextColor(0,0,0);
-    y += 15; 
+    
+    // MARCAÇÃO ROXA 1: Espaço após cabeçalho e antes dos dados
+    y += 18; 
 
     // ════════════════════════════════════════
     // CAMPOS DE DADOS
@@ -315,7 +317,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     y += CH + 8;
 
     // ════════════════════════════════════════
-    // TABELA DE HORAS (Reduzida para 10 linhas para liberar espaço)
+    // TABELA DE HORAS
     // ════════════════════════════════════════
     let colunas;
     if(linhaNome.includes("AREA LIQUIDA")){
@@ -326,8 +328,8 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
 
     const largCol  = LARGURA / colunas.length;
     const altCab   = 7.5;
-    const altRow   = 5.5; 
-    const NUM_LINHAS = 10; // Reduzido de 12 para 10
+    const altRow   = 5; // Compactada para liberar espaço para os vãos
+    const NUM_LINHAS = 10;
 
     pdf.setFillColor(44,62,80);
     for(let i=0;i<colunas.length;i++) pdf.rect(ML + i*largCol, y, largCol, altCab, 'F');
@@ -347,18 +349,20 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
         y += altRow;
     }
 
+    // MARCAÇÃO ROXA 2: Espaço entre tabela e Observações
+    y += 8;
+
     // ════════════════════════════════════════
-    // OBSERVAÇÕES — RESTAURADA COM ESPAÇO GENEROSO
+    // OBSERVAÇÕES
     // ════════════════════════════════════════
-    const Y_OBS_LABEL = y + 4.5;
+    const Y_OBS_LABEL = y + 4;
     const Y_OBS_BOX   = Y_OBS_LABEL + 3.5;
-    const ALT_OBS     = Y_RODAPE - Y_OBS_BOX - 5; 
+    const ALT_OBS     = Y_RODAPE - Y_OBS_BOX - 6; 
 
     pdf.setFont("helvetica","bold"); pdf.setFontSize(8.5);
     pdf.text("OBSERVAÇÕES:", ML, Y_OBS_LABEL);
     pdf.setDrawColor(180,180,180);
-    // Garante no mínimo 20mm de altura para observações
-    pdf.rect(ML, Y_OBS_BOX, LARGURA, ALT_OBS > 20 ? ALT_OBS : 20);
+    pdf.rect(ML, Y_OBS_BOX, LARGURA, ALT_OBS > 15 ? ALT_OBS : 15);
     pdf.setDrawColor(0,0,0);
 
     // ════════════════════════════════════════
@@ -404,7 +408,8 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.rect(145, yR, 38, 7);
     pdf.setDrawColor(0,0,0);
     
-    yR += 15; 
+    // MARCAÇÃO ROXA 3: Espaço entre Apontamento e Assinaturas
+    yR += 18; 
 
     // 3. ASSINATURAS
     pdf.setFont("helvetica","bold"); pdf.setFontSize(8.5);
@@ -419,6 +424,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.text("Nome / Assinatura", ML, yR + 4);
     pdf.text("Nome / Assinatura", 108, yR + 4);
     
+    // MARCAÇÃO ROXA 4: Espaço entre Assinaturas e Instruções
     yR += 12; 
 
     // 4. INSTRUÇÕES
