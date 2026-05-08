@@ -378,7 +378,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.rect(125, yR + 2, 3.5, 3.5);
     pdf.text("Ordem irá finalizar outro dia", 130, yR + 5);
     
-    yR += 13; 
+    yR += 20; 
 
     // 2. APONTAMENTO NO SISTEMA
     pdf.setFillColor(44,62,80);
