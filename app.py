@@ -244,7 +244,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     // ════════════════════════════════════════
     // CABEÇALHO
     // ════════════════════════════════════════
-    let y = 8;
+    let y = 6;
     const logoUrl = "https://raw.githubusercontent.com/cavalcante-creator/Programa-o-pcp-dashboard/main/COL_LOGO_8.png";
     try {
         const img = await fetch(logoUrl);
