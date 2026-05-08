@@ -327,7 +327,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     const largCol  = LARGURA / colunas.length;
     const altCab   = 7.5;
     const altRow   = 5.5; 
-    const NUM_LINHAS = 10; // Reduzido de 12 para 10
+    const NUM_LINHAS = 8; // Reduzido de 12 para 10
 
     pdf.setFillColor(44,62,80);
     for(let i=0;i<colunas.length;i++) pdf.rect(ML + i*largCol, y, largCol, altCab, 'F');
