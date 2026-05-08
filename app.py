@@ -392,7 +392,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.text("Nome / Assinatura", ML, yR + 4);
     pdf.text("Nome / Assinatura", 108, yR + 4);
     
-    yR += 15; // Espaço para separar do próximo bloco
+    yR += 10; // Espaço para separar do próximo bloco
 
     // 3. APONTAMENTO NO SISTEMA (AGORA EMBAIXO)
     pdf.setFillColor(235,235,235);
