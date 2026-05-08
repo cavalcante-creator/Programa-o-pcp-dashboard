@@ -422,7 +422,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
 
     // 4. INSTRUÇÕES
     pdf.setFillColor(255,249,220);
-    const ALT_INST_BOX = 18;
+    const ALT_INST_BOX = 20;
     pdf.rect(ML, yR, LARGURA, ALT_INST_BOX, 'F');
     pdf.setDrawColor(200,160,0);
     pdf.rect(ML, yR, LARGURA, ALT_INST_BOX);
