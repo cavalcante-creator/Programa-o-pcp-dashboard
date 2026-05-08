@@ -269,7 +269,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.setTextColor(255,255,255);
     pdf.setFontSize(13); // Fonte bem maior
     pdf.setFont("helvetica","bold");
-    pdf.text("DATA: " + data, ML + 6, y + 8);
+    pdf.text("DATA: " + data, ML + 6, y + 6);
     pdf.text("LINHA: " + String(linha).toUpperCase(), ML + 105, y + 8);
     pdf.setTextColor(0,0,0);
     y += 18; 
