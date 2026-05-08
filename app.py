@@ -225,8 +225,8 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     const PAGE_H  = 297;  // altura A4 em mm
     const MB      = 10;   // margem inferior
 
-    // ── Rodapé: Tamanho fixo para garantir Observações ──
-    const RODAPE_TOTAL = 105; 
+    // ── Rodapé: Reduzido para dar espaço às observações ──
+    const RODAPE_TOTAL = 90; 
     const Y_RODAPE = PAGE_H - MB - RODAPE_TOTAL; 
 
     // ── Helper: campo com label acima e borda ──
@@ -272,15 +272,13 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.text("DATA: " + data, ML + 5, y + 6);
     pdf.text("LINHA: " + String(linha).toUpperCase(), ML + 105, y + 6);
     pdf.setTextColor(0,0,0);
-    
-    // MARCAÇÃO ROXA 1: Espaço após cabeçalho
-    y += 18; 
+    y += 15; 
 
     // ════════════════════════════════════════
     // CAMPOS DE DADOS
     // ════════════════════════════════════════
-    const CH = 9.5;
-    const GAP = 4.2;
+    const CH = 10;
+    const GAP = 4.5;
 
     const linhaNome = String(linha).toUpperCase().replace(/_/g," ").trim();
     const ehLinha123 = /^LINHA\s*[123]$/.test(linhaNome) || /LINHA\s*[123]\b/.test(linhaNome);
@@ -314,10 +312,10 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     } else {
         campo(ML, y, LARGURA, CH, "RANCHO", numeroRancho);
     }
-    y += CH + 7;
+    y += CH + 8;
 
     // ════════════════════════════════════════
-    // TABELA DE HORAS
+    // TABELA DE HORAS (Reduzida para 10 linhas para liberar espaço)
     // ════════════════════════════════════════
     let colunas;
     if(linhaNome.includes("AREA LIQUIDA")){
@@ -327,15 +325,15 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     }
 
     const largCol  = LARGURA / colunas.length;
-    const altCab   = 7;
-    const altRow   = 4.8; 
-    const NUM_LINHAS = 10;
+    const altCab   = 7.5;
+    const altRow   = 5.5; 
+    const NUM_LINHAS = 10; // Reduzido de 12 para 10
 
     pdf.setFillColor(44,62,80);
     for(let i=0;i<colunas.length;i++) pdf.rect(ML + i*largCol, y, largCol, altCab, 'F');
     pdf.setTextColor(255,255,255);
     pdf.setFont("helvetica","bold"); pdf.setFontSize(7);
-    colunas.forEach((c,i) => pdf.text(c, ML + i*largCol + 1.5, y + 4.5));
+    colunas.forEach((c,i) => pdf.text(c, ML + i*largCol + 1.5, y + 4.8));
     pdf.setTextColor(0,0,0);
     y += altCab;
 
@@ -349,21 +347,18 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
         y += altRow;
     }
 
-    // MARCAÇÃO ROXA 2: Espaço entre tabela e Observações
-    y += 8;
-
     // ════════════════════════════════════════
-    // OBSERVAÇÕES — RESTAURADA E FIXADA
+    // OBSERVAÇÕES — RESTAURADA COM ESPAÇO GENEROSO
     // ════════════════════════════════════════
-    const Y_OBS_LABEL = y + 4;
+    const Y_OBS_LABEL = y + 4.5;
     const Y_OBS_BOX   = Y_OBS_LABEL + 3.5;
-    const ALT_OBS     = Y_RODAPE - Y_OBS_BOX - 6; 
+    const ALT_OBS     = Y_RODAPE - Y_OBS_BOX - 5; 
 
     pdf.setFont("helvetica","bold"); pdf.setFontSize(8.5);
     pdf.text("OBSERVAÇÕES:", ML, Y_OBS_LABEL);
     pdf.setDrawColor(180,180,180);
-    // Força uma altura mínima de 18mm para observações
-    pdf.rect(ML, Y_OBS_BOX, LARGURA, ALT_OBS > 18 ? ALT_OBS : 18);
+    // Garante no mínimo 20mm de altura para observações
+    pdf.rect(ML, Y_OBS_BOX, LARGURA, ALT_OBS > 20 ? ALT_OBS : 20);
     pdf.setDrawColor(0,0,0);
 
     // ════════════════════════════════════════
@@ -409,8 +404,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.rect(145, yR, 38, 7);
     pdf.setDrawColor(0,0,0);
     
-    // MARCAÇÃO ROXA 3: Espaço entre Apontamento e Assinaturas
-    yR += 18; 
+    yR += 15; 
 
     // 3. ASSINATURAS
     pdf.setFont("helvetica","bold"); pdf.setFontSize(8.5);
@@ -425,7 +419,6 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.text("Nome / Assinatura", ML, yR + 4);
     pdf.text("Nome / Assinatura", 108, yR + 4);
     
-    // MARCAÇÃO ROXA 4: Espaço entre Assinaturas e Instruções
     yR += 12; 
 
     // 4. INSTRUÇÕES
