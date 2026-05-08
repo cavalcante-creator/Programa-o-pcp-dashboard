@@ -316,7 +316,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     });
     pdf.setFont("helvetica","normal");
     y += altRow;
-    const limiteTabela = 168;
+    const limiteTabela = 155;
     while(y < limiteTabela){
         for(let j = 0; j < colunas.length; j++){
             pdf.rect(10 + j * largCol, y, largCol, altRow);
@@ -331,7 +331,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.text("OBSERVAÇÕES:", 10, y);
     y += 2;
     pdf.rect(10, y, 190, 18);
-    y += 15;
+    y += 11;
 
     // ── STATUS DA ORDEM (logo após observações) ──
     pdf.setFillColor(235, 235, 235);
