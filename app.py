@@ -341,7 +341,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.rect(10, y, 190, 9);
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(8);
-    pdf.text("STATUS DA ORDEM:", 9, y + 6);
+    pdf.text("STATUS DA ORDEM:", 11, y + 4);
     pdf.rect(70, y + 2.5, 4, 4);
     pdf.setFont("helvetica", "normal");
     pdf.text("Ordem Finalizada", 76, y + 6);
