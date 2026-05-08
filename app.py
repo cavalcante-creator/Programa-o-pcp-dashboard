@@ -350,7 +350,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     // ════════════════════════════════════════
     // OBSERVAÇÕES
     // ════════════════════════════════════════
-    const Y_OBS_LABEL = y + 9.5;
+    const Y_OBS_LABEL = y + 5.5;
     const Y_OBS_BOX   = Y_OBS_LABEL + 3.5;
     const ALT_OBS     = Y_RODAPE - Y_OBS_BOX - 0; 
 
