@@ -226,7 +226,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     const MB      = 10;   // margem inferior
 
     // ── Rodapé: Reduzido para dar espaço às observações ──
-    const RODAPE_TOTAL = 125; 
+    const RODAPE_TOTAL = 80; 
     const Y_RODAPE = PAGE_H - MB - RODAPE_TOTAL; 
 
     // ── Helper: campo com label acima e borda ──
