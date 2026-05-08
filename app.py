@@ -223,16 +223,16 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     const ML      = 10;   // margem esquerda
     const LARGURA = 190;  // largura útil
     const PAGE_H  = 297;  // altura A4 em mm
-    const MB      = 12;   // margem inferior para evitar corte na impressão
+    const MB      = 10;   // margem inferior
 
-    // ── Rodapé: Expandido para ocupar o espaço em branco final ──
-    const RODAPE_TOTAL = 115; // Aumentado drasticamente para ocupar o fim da folha
+    // ── Rodapé: Ajuste fino para equilibrar espaço ──
+    const RODAPE_TOTAL = 95; 
     const Y_RODAPE = PAGE_H - MB - RODAPE_TOTAL; 
 
     // ── Helper: campo com label acima e borda ──
     function campo(x, yy, w, h, label, valor){
         pdf.setFontSize(7); pdf.setFont("helvetica","bold");
-        pdf.text(label, x + 1, yy - 1.5); 
+        pdf.text(label, x + 1, yy - 1.2); 
         pdf.setDrawColor(180,180,180);
         pdf.rect(x, yy, w, h);
         pdf.setDrawColor(0,0,0);
@@ -253,32 +253,32 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
         await new Promise(resolve => { reader.onloadend = resolve; reader.readAsDataURL(blob); });
         const base64 = reader.result;
         const props = pdf.getImageProperties(base64);
-        const larg = 35; // Aumentei um pouco a logo
+        const larg = 30;
         const alt = (props.height * larg) / props.width;
         pdf.addImage(base64, 'PNG', ML, y, larg, alt);
     } catch(e){}
 
     pdf.setFont("helvetica","bold");
-    pdf.setFontSize(16); // Aumentei título principal
-    pdf.text("ORDEM DE PRODUÇÃO", 105, y + 10, { align: "center" });
-    y += 20;
+    pdf.setFontSize(15);
+    pdf.text("ORDEM DE PRODUÇÃO", 105, y + 9, { align: "center" });
+    y += 18;
 
-    // Faixa DATA / LINHA (MÁXIMA EVIDÊNCIA)
+    // Faixa DATA / LINHA (AJUSTE MÉDIO - NEM GRANDE NEM PEQUENO)
     pdf.setFillColor(44,62,80);
-    pdf.rect(ML, y, LARGURA, 10, 'F'); 
+    pdf.rect(ML, y, LARGURA, 9, 'F'); // Tamanho intermediário
     pdf.setTextColor(255,255,255);
-    pdf.setFontSize(13); // Fonte bem maior
+    pdf.setFontSize(10.5); // Fonte intermediária
     pdf.setFont("helvetica","bold");
-    pdf.text("DATA: " + data, ML + 6, y + 6);
-    pdf.text("LINHA: " + String(linha).toUpperCase(), ML + 105, y + 8);
+    pdf.text("DATA: " + data, ML + 5, y + 6);
+    pdf.text("LINHA: " + String(linha).toUpperCase(), ML + 105, y + 6);
     pdf.setTextColor(0,0,0);
-    y += 18; 
+    y += 15; 
 
     // ════════════════════════════════════════
     // CAMPOS DE DADOS
     // ════════════════════════════════════════
     const CH = 11;
-    const GAP = 6; // Mais espaço entre blocos de dados
+    const GAP = 5;
 
     const linhaNome = String(linha).toUpperCase().replace(/_/g," ").trim();
     const ehLinha123 = /^LINHA\s*[123]$/.test(linhaNome) || /LINHA\s*[123]\b/.test(linhaNome);
@@ -312,7 +312,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     } else {
         campo(ML, y, LARGURA, CH, "RANCHO", numeroRancho);
     }
-    y += CH + 10;
+    y += CH + 8;
 
     // ════════════════════════════════════════
     // TABELA DE HORAS
@@ -325,7 +325,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     }
 
     const largCol  = LARGURA / colunas.length;
-    const altCab   = 8;
+    const altCab   = 7.5;
     const altRow   = 5.5; 
     const NUM_LINHAS = 12;
 
@@ -333,7 +333,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     for(let i=0;i<colunas.length;i++) pdf.rect(ML + i*largCol, y, largCol, altCab, 'F');
     pdf.setTextColor(255,255,255);
     pdf.setFont("helvetica","bold"); pdf.setFontSize(7);
-    colunas.forEach((c,i) => pdf.text(c, ML + i*largCol + 1.5, y + 5));
+    colunas.forEach((c,i) => pdf.text(c, ML + i*largCol + 1.5, y + 4.8));
     pdf.setTextColor(0,0,0);
     y += altCab;
 
@@ -350,87 +350,87 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     // ════════════════════════════════════════
     // OBSERVAÇÕES
     // ════════════════════════════════════════
-    const Y_OBS_LABEL = y + 5;
-    const Y_OBS_BOX   = Y_OBS_LABEL + 4;
-    const ALT_OBS     = Y_RODAPE - Y_OBS_BOX - 6; 
+    const Y_OBS_LABEL = y + 4;
+    const Y_OBS_BOX   = Y_OBS_LABEL + 3.5;
+    const ALT_OBS     = Y_RODAPE - Y_OBS_BOX - 5; 
 
-    pdf.setFont("helvetica","bold"); pdf.setFontSize(9);
+    pdf.setFont("helvetica","bold"); pdf.setFontSize(8.5);
     pdf.text("OBSERVAÇÕES:", ML, Y_OBS_LABEL);
     pdf.setDrawColor(180,180,180);
-    pdf.rect(ML, Y_OBS_BOX, LARGURA, ALT_OBS > 15 ? ALT_OBS : 15);
+    pdf.rect(ML, Y_OBS_BOX, LARGURA, ALT_OBS > 12 ? ALT_OBS : 12);
     pdf.setDrawColor(0,0,0);
 
     // ════════════════════════════════════════
-    // RODAPÉ — REDISTRIBUIÇÃO TOTAL DO ESPAÇO
+    // RODAPÉ — ESPAÇAMENTO EQUILIBRADO
     // ════════════════════════════════════════
     let yR = Y_RODAPE;
 
     // 1. STATUS DA ORDEM
     pdf.setFillColor(235,235,235);
-    pdf.rect(ML, yR, LARGURA, 9, 'F');
-    pdf.rect(ML, yR, LARGURA, 9);
-    pdf.setFont("helvetica","bold"); pdf.setFontSize(9);
-    pdf.text("STATUS DA ORDEM:", ML + 4, yR + 6);
-    pdf.rect(70, yR + 2.5, 4, 4);
-    pdf.setFont("helvetica","normal"); pdf.setFontSize(9);
-    pdf.text("Ordem Finalizada", 76, yR + 6);
-    pdf.rect(130, yR + 2.5, 4, 4);
-    pdf.text("Ordem irá finalizar outro dia", 136, yR + 6);
+    pdf.rect(ML, yR, LARGURA, 7.5, 'F');
+    pdf.rect(ML, yR, LARGURA, 7.5);
+    pdf.setFont("helvetica","bold"); pdf.setFontSize(8.5);
+    pdf.text("STATUS DA ORDEM:", ML + 4, yR + 5);
+    pdf.rect(68, yR + 2, 3.5, 3.5);
+    pdf.setFont("helvetica","normal"); pdf.setFontSize(8.5);
+    pdf.text("Ordem Finalizada", 73, yR + 5);
+    pdf.rect(125, yR + 2, 3.5, 3.5);
+    pdf.text("Ordem irá finalizar outro dia", 130, yR + 5);
     
-    yR += 20; // GRANDE ESPAÇO
+    yR += 15; // Espaço médio
 
     // 2. APONTAMENTO NO SISTEMA
     pdf.setFillColor(44,62,80);
-    pdf.rect(ML, yR, LARGURA, 8, 'F');
+    pdf.rect(ML, yR, LARGURA, 7, 'F');
     pdf.setTextColor(255,255,255);
-    pdf.setFont("helvetica","bold"); pdf.setFontSize(9);
-    pdf.text("APONTAMENTO NO SISTEMA", 105, yR + 5.5, { align:"center" });
+    pdf.setFont("helvetica","bold"); pdf.setFontSize(8.5);
+    pdf.text("APONTAMENTO NO SISTEMA", 105, yR + 4.8, { align:"center" });
     pdf.setTextColor(0,0,0);
-    yR += 12;
+    yR += 10;
 
-    pdf.setFont("helvetica","bold"); pdf.setFontSize(9);
-    pdf.text("Apontado:", ML, yR + 5);
-    pdf.rect(30, yR + 1, 4, 4);
+    pdf.setFont("helvetica","bold"); pdf.setFontSize(8.5);
+    pdf.text("Apontado:", ML, yR + 4.5);
+    pdf.rect(30, yR + 1, 3.5, 3.5);
     pdf.setFont("helvetica","normal");
-    pdf.text("Sim", 36, yR + 5);
-    pdf.rect(55, yR + 1, 4, 4);
-    pdf.text("Não", 61, yR + 5);
+    pdf.text("Sim", 35, yR + 4.5);
+    pdf.rect(52, yR + 1, 3.5, 3.5);
+    pdf.text("Não", 57, yR + 4.5);
     pdf.setFont("helvetica","bold");
-    pdf.text("Hora:", 85, yR + 5);
+    pdf.text("Hora:", 80, yR + 4.5);
     pdf.setDrawColor(180,180,180);
-    pdf.rect(97, yR, 35, 8);
-    pdf.text("Data:", 140, yR + 5);
-    pdf.rect(152, yR, 38, 8);
+    pdf.rect(92, yR, 32, 7);
+    pdf.text("Data:", 135, yR + 4.5);
+    pdf.rect(145, yR, 38, 7);
     pdf.setDrawColor(0,0,0);
     
-    yR += 22; // GRANDE ESPAÇO
+    yR += 16; // Espaço médio
 
     // 3. ASSINATURAS
-    pdf.setFont("helvetica","bold"); pdf.setFontSize(9);
+    pdf.setFont("helvetica","bold"); pdf.setFontSize(8.5);
     pdf.text("RESP. APONTAMENTO:", ML, yR);
     pdf.text("ASSINATURA DO OPERADOR:", 108, yR);
-    yR += 10;
+    yR += 8;
     pdf.setDrawColor(150,150,150);
     pdf.line(ML, yR, 100, yR);
     pdf.line(108, yR, 200, yR);
     pdf.setDrawColor(0,0,0);
-    pdf.setFont("helvetica","normal"); pdf.setFontSize(8);
-    pdf.text("Nome / Assinatura", ML, yR + 5);
-    pdf.text("Nome / Assinatura", 108, yR + 5);
+    pdf.setFont("helvetica","normal"); pdf.setFontSize(7.5);
+    pdf.text("Nome / Assinatura", ML, yR + 4);
+    pdf.text("Nome / Assinatura", 108, yR + 4);
     
-    yR += 20; // GRANDE ESPAÇO PARA CHEGAR NO FIM
+    yR += 12; // ESPAÇO PEQUENO COMO SOLICITADO
 
-    // 4. INSTRUÇÕES (NO LIMITE DO RODAPÉ)
+    // 4. INSTRUÇÕES (AJUSTE FINAL)
     pdf.setFillColor(255,249,220);
-    const ALT_INST_BOX = 20;
+    const ALT_INST_BOX = 18;
     pdf.rect(ML, yR, LARGURA, ALT_INST_BOX, 'F');
     pdf.setDrawColor(200,160,0);
     pdf.rect(ML, yR, LARGURA, ALT_INST_BOX);
     pdf.setDrawColor(0,0,0);
     
-    pdf.setFont("helvetica","bold"); pdf.setFontSize(8);
-    pdf.text("INSTRUÇÕES PARA CONTROLE DA PRODUÇÃO", ML + 4, yR + 6);
-    pdf.setFont("helvetica","normal"); pdf.setFontSize(8);
+    pdf.setFont("helvetica","bold"); pdf.setFontSize(7.5);
+    pdf.text("INSTRUÇÕES PARA CONTROLE DA PRODUÇÃO", ML + 4, yR + 5);
+    pdf.setFont("helvetica","normal"); pdf.setFontSize(7.5);
     
     const instrucoes = [
         "• As ordens de fabricação devem ser fabricadas até a quantidade final para melhor controle da produção diária.",
@@ -438,7 +438,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
         "• Sinalizar acima se a ordem foi finalizada ou se sobrou material e continuará no próximo dia."
     ];
     instrucoes.forEach((txt, idx) => {
-        pdf.text(txt, ML + 4, yR + 11 + idx * 4.5);
+        pdf.text(txt, ML + 4, yR + 9.5 + idx * 4);
     });
 
     // ════════════════════════════════════════
