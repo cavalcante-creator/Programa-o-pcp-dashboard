@@ -261,7 +261,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.setFont("helvetica","bold");
     pdf.setFontSize(15);
     pdf.text("ORDEM DE PRODUÇÃO", 105, y + 9, { align: "center" });
-    y += 18;
+    y += 15;
 
     // Faixa DATA / LINHA
     pdf.setFillColor(44,62,80);
@@ -272,7 +272,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.text("DATA: " + data, ML + 5, y + 6);
     pdf.text("LINHA: " + String(linha).toUpperCase(), ML + 105, y + 6);
     pdf.setTextColor(0,0,0);
-    y += 20; 
+    y += 18; 
 
     // ════════════════════════════════════════
     // CAMPOS DE DADOS
