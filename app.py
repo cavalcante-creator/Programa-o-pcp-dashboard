@@ -223,16 +223,16 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     const ML      = 10;   // margem esquerda
     const LARGURA = 190;  // largura útil
     const PAGE_H  = 297;  // altura A4 em mm
-    const MB      = 8;    // margem inferior
+    const MB      = 10;   // margem inferior aumentada para segurança
 
-    // ── Rodapé: Redimensionado para garantir respiro ──
-    const RODAPE_TOTAL = 75; 
+    // ── Rodapé: Redimensionado para dar o espaçamento solicitado ──
+    const RODAPE_TOTAL = 85; 
     const Y_RODAPE = PAGE_H - MB - RODAPE_TOTAL; 
 
     // ── Helper: campo com label acima e borda ──
     function campo(x, yy, w, h, label, valor){
         pdf.setFontSize(6.5); pdf.setFont("helvetica","bold");
-        pdf.text(label, x + 1, yy - 0.8); 
+        pdf.text(label, x + 1, yy - 1.2); 
         pdf.setDrawColor(180,180,180);
         pdf.rect(x, yy, w, h);
         pdf.setDrawColor(0,0,0);
@@ -263,22 +263,22 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.text("ORDEM DE PRODUÇÃO", 105, y + 9, { align: "center" });
     y += 18;
 
-    // Faixa DATA / LINHA
+    // Faixa DATA / LINHA (EVIDENCIADA)
     pdf.setFillColor(44,62,80);
-    pdf.rect(ML, y, LARGURA, 7, 'F');
+    pdf.rect(ML, y, LARGURA, 10, 'F'); // Aumentei altura da faixa
     pdf.setTextColor(255,255,255);
-    pdf.setFontSize(8);
+    pdf.setFontSize(11); // Aumentei tamanho da fonte
     pdf.setFont("helvetica","bold");
-    pdf.text("DATA: " + data, ML + 4, y + 4.8);
-    pdf.text("LINHA: " + linha, ML + 100, y + 4.8);
+    pdf.text("DATA: " + data, ML + 5, y + 6.5);
+    pdf.text("LINHA: " + String(linha).toUpperCase(), ML + 100, y + 6.5);
     pdf.setTextColor(0,0,0);
-    y += 12;
+    y += 16; // Mais espaço após o cabeçalho evidenciado
 
     // ════════════════════════════════════════
     // CAMPOS DE DADOS
     // ════════════════════════════════════════
     const CH = 10;
-    const GAP = 4.5;
+    const GAP = 5;
 
     const linhaNome = String(linha).toUpperCase().replace(/_/g," ").trim();
     const ehLinha123 = /^LINHA\s*[123]$/.test(linhaNome) || /LINHA\s*[123]\b/.test(linhaNome);
@@ -312,7 +312,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     } else {
         campo(ML, y, LARGURA, CH, "RANCHO", numeroRancho);
     }
-    y += CH + 7;
+    y += CH + 8;
 
     // ════════════════════════════════════════
     // TABELA DE HORAS
@@ -326,7 +326,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
 
     const largCol  = LARGURA / colunas.length;
     const altCab   = 7;
-    const altRow   = 5.5; // Reduzi levemente para ganhar espaço para o rodapé
+    const altRow   = 5; // Reduzi mais para priorizar o rodapé
     const NUM_LINHAS = 12;
 
     pdf.setFillColor(44,62,80);
@@ -348,11 +348,11 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     }
 
     // ════════════════════════════════════════
-    // OBSERVAÇÕES — preenche o espaço restante
+    // OBSERVAÇÕES
     // ════════════════════════════════════════
-    const Y_OBS_LABEL = y + 3.5;
+    const Y_OBS_LABEL = y + 4;
     const Y_OBS_BOX   = Y_OBS_LABEL + 3;
-    const ALT_OBS     = Y_RODAPE - Y_OBS_BOX - 3;
+    const ALT_OBS     = Y_RODAPE - Y_OBS_BOX - 4; // Ajuste dinâmico
 
     pdf.setFont("helvetica","bold"); pdf.setFontSize(8);
     pdf.text("OBSERVAÇÕES:", ML, Y_OBS_LABEL);
@@ -361,50 +361,52 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.setDrawColor(0,0,0);
 
     // ════════════════════════════════════════
-    // RODAPÉ — Com mais respiro entre seções
+    // RODAPÉ — ESPAÇAMENTO CORRIGIDO E DEFINIDO
     // ════════════════════════════════════════
     let yR = Y_RODAPE;
 
     // 1. STATUS DA ORDEM
     pdf.setFillColor(235,235,235);
-    pdf.rect(ML, yR, LARGURA, 6, 'F');
-    pdf.rect(ML, yR, LARGURA, 6);
-    pdf.setFont("helvetica","bold"); pdf.setFontSize(7.5);
-    pdf.text("STATUS DA ORDEM:", ML + 3, yR + 4.2);
-    pdf.rect(60, yR + 1.5, 3, 3);
-    pdf.setFont("helvetica","normal"); pdf.setFontSize(7.5);
-    pdf.text("Ordem Finalizada", 65, yR + 4.2);
-    pdf.rect(115, yR + 1.5, 3, 3);
-    pdf.text("Ordem irá finalizar outro dia", 120, yR + 4.2);
-    yR += 10; // Espaço para próxima seção
+    pdf.rect(ML, yR, LARGURA, 7, 'F');
+    pdf.rect(ML, yR, LARGURA, 7);
+    pdf.setFont("helvetica","bold"); pdf.setFontSize(8);
+    pdf.text("STATUS DA ORDEM:", ML + 3, yR + 4.8);
+    pdf.rect(65, yR + 1.8, 3.5, 3.5);
+    pdf.setFont("helvetica","normal"); pdf.setFontSize(8);
+    pdf.text("Ordem Finalizada", 70, yR + 4.8);
+    pdf.rect(120, yR + 1.8, 3.5, 3.5);
+    pdf.text("Ordem irá finalizar outro dia", 125, yR + 4.8);
+    
+    yR += 13; // GAP GENEROSO ENTRE STATUS E APONTAMENTO
 
     // 2. APONTAMENTO NO SISTEMA
     pdf.setFillColor(44,62,80);
     pdf.rect(ML, yR, LARGURA, 6, 'F');
     pdf.setTextColor(255,255,255);
-    pdf.setFont("helvetica","bold"); pdf.setFontSize(7.5);
+    pdf.setFont("helvetica","bold"); pdf.setFontSize(8);
     pdf.text("APONTAMENTO NO SISTEMA", 105, yR + 4.5, { align:"center" });
     pdf.setTextColor(0,0,0);
-    yR += 8;
+    yR += 9;
 
-    pdf.setFont("helvetica","bold"); pdf.setFontSize(7.5);
+    pdf.setFont("helvetica","bold"); pdf.setFontSize(8);
     pdf.text("Apontado:", ML, yR + 4);
-    pdf.rect(25, yR + 1, 3, 3);
+    pdf.rect(28, yR + 1, 3.5, 3.5);
     pdf.setFont("helvetica","normal");
-    pdf.text("Sim", 30, yR + 4);
-    pdf.rect(42, yR + 1, 3, 3);
-    pdf.text("Não", 47, yR + 4);
+    pdf.text("Sim", 33, yR + 4);
+    pdf.rect(48, yR + 1, 3.5, 3.5);
+    pdf.text("Não", 53, yR + 4);
     pdf.setFont("helvetica","bold");
-    pdf.text("Hora:", 65, yR + 4);
+    pdf.text("Hora:", 75, yR + 4);
     pdf.setDrawColor(180,180,180);
-    pdf.rect(75, yR, 30, 6);
-    pdf.text("Data:", 115, yR + 4);
-    pdf.rect(125, yR, 35, 6);
+    pdf.rect(85, yR, 30, 6);
+    pdf.text("Data:", 125, yR + 4);
+    pdf.rect(135, yR, 35, 6);
     pdf.setDrawColor(0,0,0);
-    yR += 11; // Mais espaço para assinaturas
+    
+    yR += 14; // GAP GENEROSO ENTRE APONTAMENTO E ASSINATURAS
 
     // 3. ASSINATURAS
-    pdf.setFont("helvetica","bold"); pdf.setFontSize(7.5);
+    pdf.setFont("helvetica","bold"); pdf.setFontSize(8);
     pdf.text("RESP. APONTAMENTO:", ML, yR);
     pdf.text("ASSINATURA DO OPERADOR:", 108, yR);
     yR += 6;
@@ -412,22 +414,23 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.line(ML, yR, 100, yR);
     pdf.line(108, yR, 200, yR);
     pdf.setDrawColor(0,0,0);
-    pdf.setFont("helvetica","normal"); pdf.setFontSize(6.5);
-    pdf.text("Nome / Assinatura", ML, yR + 3.5);
-    pdf.text("Nome / Assinatura", 108, yR + 3.5);
-    yR += 9; // Mais espaço para instruções
+    pdf.setFont("helvetica","normal"); pdf.setFontSize(7);
+    pdf.text("Nome / Assinatura", ML, yR + 4);
+    pdf.text("Nome / Assinatura", 108, yR + 4);
+    
+    yR += 12; // GAP GENEROSO ENTRE ASSINATURAS E INSTRUÇÕES
 
     // 4. INSTRUÇÕES
     pdf.setFillColor(255,249,220);
-    const ALT_INST_BOX = 16;
+    const ALT_INST_BOX = 18;
     pdf.rect(ML, yR, LARGURA, ALT_INST_BOX, 'F');
     pdf.setDrawColor(200,160,0);
     pdf.rect(ML, yR, LARGURA, ALT_INST_BOX);
     pdf.setDrawColor(0,0,0);
     
-    pdf.setFont("helvetica","bold"); pdf.setFontSize(7);
-    pdf.text("INSTRUÇÕES:", ML + 3, yR + 4);
-    pdf.setFont("helvetica","normal"); pdf.setFontSize(7);
+    pdf.setFont("helvetica","bold"); pdf.setFontSize(7.5);
+    pdf.text("INSTRUÇÕES PARA CONTROLE DA PRODUÇÃO", ML + 3, yR + 5);
+    pdf.setFont("helvetica","normal"); pdf.setFontSize(7.5);
     
     const instrucoes = [
         "• As ordens de fabricação devem ser fabricadas até a quantidade final para melhor controle da produção diária.",
@@ -435,7 +438,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
         "• Sinalizar acima se a ordem foi finalizada ou se sobrou material e continuará no próximo dia."
     ];
     instrucoes.forEach((txt, idx) => {
-        pdf.text(txt, ML + 3, yR + 7.5 + idx * 3.5);
+        pdf.text(txt, ML + 3, yR + 9.5 + idx * 4);
     });
 
     // ════════════════════════════════════════
