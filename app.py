@@ -220,10 +220,21 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     const pdf = new jsPDF('p','mm','a4');
 
     // ── Constantes de layout ──
-    const ML = 10;       // margem esquerda
-    const LARGURA = 190; // largura útil
+    const ML      = 10;   // margem esquerda
+    const LARGURA = 190;  // largura útil
+    const PAGE_H  = 297;  // altura A4 em mm
+    const MB      = 8;    // margem inferior
 
-    let y = 8;
+    // ── Rodapé: calculado de baixo para cima ──
+    // Assinaturas bloco: 14mm
+    // Linha apontamento + gap: 12mm
+    // Faixa APONTAMENTO + gap: 11mm
+    // Caixa amarela + gap: 27mm
+    // Faixa INSTRUCOES + gap: 10mm
+    // STATUS DA ORDEM + gap: 12mm
+    // Total: 86mm
+    const RODAPE_TOTAL = 86;
+    const Y_RODAPE = PAGE_H - MB - RODAPE_TOTAL; // ~203mm
 
     // ── Helper: campo com label acima e borda ──
     function campo(x, yy, w, h, label, valor){
@@ -240,6 +251,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     // ════════════════════════════════════════
     // CABEÇALHO
     // ════════════════════════════════════════
+    let y = 8;
     const logoUrl = "https://raw.githubusercontent.com/cavalcante-creator/Programa-o-pcp-dashboard/main/COL_LOGO_8.png";
     try {
         const img = await fetch(logoUrl);
@@ -270,10 +282,15 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     y += 10;
 
     // ════════════════════════════════════════
-    // CAMPOS DE DADOS  (CH=11, GAP=2)
+    // CAMPOS DE DADOS
     // ════════════════════════════════════════
     const CH = 11;
     const GAP = 2;
+
+    const linhaNome = String(linha).toUpperCase().replace(/_/g," ").trim();
+    const ehLinha123 = /^LINHA\s*[123]$/.test(linhaNome) || /LINHA\s*[123]\b/.test(linhaNome);
+    const meta = RANCHOS_META[ordem];
+    const numeroRancho = meta ? meta.numero : "";
 
     campo(ML, y, 127, CH, "PRODUTO", produto);
     campo(ML + 129, y, 61, CH, "ORDEM", ordem);
@@ -287,11 +304,6 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     campo(ML, y, 90, CH, "STATUS", status);
     campo(ML + 92, y, 98, CH, "OPERADOR", "");
     y += CH + GAP;
-
-    const meta = RANCHOS_META[ordem];
-    const numeroRancho = meta ? meta.numero : "";
-    const linhaNome = String(linha).toUpperCase().replace(/_/g," ").trim();
-    const ehLinha123 = /^LINHA\s*[123]$/.test(linhaNome) || /LINHA\s*[123]\b/.test(linhaNome);
 
     if(ehLinha123){
         const SC_POR_PALETE = 88;
@@ -307,10 +319,10 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     } else {
         campo(ML, y, LARGURA, CH, "RANCHO", numeroRancho);
     }
-    y += CH + 4;
+    y += CH + 5;
 
     // ════════════════════════════════════════
-    // TABELA DE HORAS  (12 linhas fixas)
+    // TABELA DE HORAS
     // ════════════════════════════════════════
     let colunas;
     if(linhaNome.includes("AREA LIQUIDA")){
@@ -319,12 +331,11 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
         colunas = ["HORA INICIO","HORA FIM","N PALLETS","SACOS (UN)","RASGADOS","PARADAS"];
     }
 
-    const largCol = LARGURA / colunas.length;
-    const altCab  = 8;
-    const altRow  = 6.5;
+    const largCol  = LARGURA / colunas.length;
+    const altCab   = 8;
+    const altRow   = 6.5;
     const NUM_LINHAS = 12;
 
-    // cabeçalho escuro
     pdf.setFillColor(44,62,80);
     for(let i=0;i<colunas.length;i++) pdf.rect(ML + i*largCol, y, largCol, altCab, 'F');
     pdf.setTextColor(255,255,255);
@@ -333,7 +344,6 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.setTextColor(0,0,0);
     y += altCab;
 
-    // linhas da tabela
     pdf.setFont("helvetica","normal");
     for(let row=0; row<NUM_LINHAS; row++){
         if(row % 2 === 0){
@@ -343,54 +353,58 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
         for(let j=0;j<colunas.length;j++) pdf.rect(ML + j*largCol, y, largCol, altRow);
         y += altRow;
     }
-    y += 3;
 
     // ════════════════════════════════════════
-    // OBSERVAÇÕES  (altura fixa = 22mm)
+    // OBSERVAÇÕES — cresce até o rodapé
     // ════════════════════════════════════════
-    const ALT_OBS = 22;
+    // y_obs_inicio = y + 8 (label + folga)
+    // y_obs_fim    = Y_RODAPE - 3
+    const Y_OBS_LABEL = y + 3;
+    const Y_OBS_BOX   = Y_OBS_LABEL + 5;
+    const ALT_OBS     = Y_RODAPE - Y_OBS_BOX - 3; // preenche tudo até o rodapé
+
     pdf.setFont("helvetica","bold"); pdf.setFontSize(8);
-    pdf.text("OBSERVAÇÕES:", ML, y + 5);
+    pdf.text("OBSERVAÇÕES:", ML, Y_OBS_LABEL);
     pdf.setDrawColor(180,180,180);
-    pdf.rect(ML, y + 7, LARGURA, ALT_OBS);
+    pdf.rect(ML, Y_OBS_BOX, LARGURA, ALT_OBS > 10 ? ALT_OBS : 15);
     pdf.setDrawColor(0,0,0);
-    y += ALT_OBS + 10;
 
     // ════════════════════════════════════════
+    // RODAPÉ — ancorado em Y_RODAPE (fixo)
+    // ════════════════════════════════════════
+    let yR = Y_RODAPE;
+
     // STATUS DA ORDEM
-    // ════════════════════════════════════════
     pdf.setFillColor(235,235,235);
-    pdf.rect(ML, y, LARGURA, 8, 'F');
-    pdf.rect(ML, y, LARGURA, 8);
+    pdf.rect(ML, yR, LARGURA, 8, 'F');
+    pdf.rect(ML, yR, LARGURA, 8);
     pdf.setFont("helvetica","bold"); pdf.setFontSize(8);
-    pdf.text("STATUS DA ORDEM:", ML + 3, y + 5.5);
-    pdf.rect(66, y + 2.5, 3.5, 3.5);
+    pdf.text("STATUS DA ORDEM:", ML + 3, yR + 5.5);
+    pdf.rect(66, yR + 2.5, 3.5, 3.5);
     pdf.setFont("helvetica","normal"); pdf.setFontSize(8);
-    pdf.text("Ordem Finalizada", 71, y + 5.5);
-    pdf.rect(124, y + 2.5, 3.5, 3.5);
-    pdf.text("Ordem irá finalizar outro dia", 129.5, y + 5.5);
-    y += 11;
+    pdf.text("Ordem Finalizada", 71, yR + 5.5);
+    pdf.rect(125, yR + 2.5, 3.5, 3.5);
+    pdf.text("Ordem irá finalizar outro dia", 130.5, yR + 5.5);
+    yR += 11;
 
-    // ════════════════════════════════════════
-    // FAIXA INSTRUÇÕES
-    // ════════════════════════════════════════
+    // Faixa INSTRUÇÕES
     pdf.setFillColor(44,62,80);
-    pdf.rect(ML, y, LARGURA, 7, 'F');
+    pdf.rect(ML, yR, LARGURA, 7, 'F');
     pdf.setTextColor(255,255,255);
     pdf.setFont("helvetica","bold"); pdf.setFontSize(8);
-    pdf.text("INSTRUÇÕES PARA CONTROLE DA PRODUÇÃO", 105, y + 5, { align:"center" });
+    pdf.text("INSTRUÇÕES PARA CONTROLE DA PRODUÇÃO", 105, yR + 5, { align:"center" });
     pdf.setTextColor(0,0,0);
-    y += 9;
+    yR += 9;
 
     // Caixa amarela
-    const ALT_INST = 22;
+    const ALT_INST = 24;
     pdf.setFillColor(255,249,220);
-    pdf.rect(ML, y, LARGURA, ALT_INST, 'F');
+    pdf.rect(ML, yR, LARGURA, ALT_INST, 'F');
     pdf.setDrawColor(200,160,0);
-    pdf.rect(ML, y, LARGURA, ALT_INST);
+    pdf.rect(ML, yR, LARGURA, ALT_INST);
     pdf.setDrawColor(0,0,0);
     pdf.setFont("helvetica","bold"); pdf.setFontSize(7.5);
-    pdf.text("ATENÇÃO:", ML + 3, y + 5.5);
+    pdf.text("ATENÇÃO:", ML + 3, yR + 5.5);
     pdf.setFont("helvetica","normal"); pdf.setFontSize(7.5);
     const instrucoes = [
         "• As ordens de fabricação devem ser fabricadas até a quantidade final para melhor controle da produção diária.",
@@ -398,50 +412,48 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
         "• Sinalizar abaixo se a ordem foi finalizada ou se sobrou material e continuará no próximo dia."
     ];
     instrucoes.forEach((txt, idx) => {
-        pdf.text(txt, ML + 3, y + 11 + idx * 4.5);
+        pdf.text(txt, ML + 3, yR + 11 + idx * 4.5);
     });
-    y += ALT_INST + 3;
+    yR += ALT_INST + 3;
 
-    // ════════════════════════════════════════
-    // FAIXA APONTAMENTO
-    // ════════════════════════════════════════
+    // Faixa APONTAMENTO
     pdf.setFillColor(44,62,80);
-    pdf.rect(ML, y, LARGURA, 7, 'F');
+    pdf.rect(ML, yR, LARGURA, 7, 'F');
     pdf.setTextColor(255,255,255);
     pdf.setFont("helvetica","bold"); pdf.setFontSize(8);
-    pdf.text("APONTAMENTO NO SISTEMA", 105, y + 5, { align:"center" });
+    pdf.text("APONTAMENTO NO SISTEMA", 105, yR + 5, { align:"center" });
     pdf.setTextColor(0,0,0);
-    y += 11;
+    yR += 11;
 
     // Linha apontamento
     pdf.setFont("helvetica","bold"); pdf.setFontSize(8);
-    pdf.text("Apontado no sistema:", ML, y + 4.5);
-    pdf.rect(55, y + 1, 3.5, 3.5);
+    pdf.text("Apontado no sistema:", ML, yR + 4.5);
+    pdf.rect(55, yR + 1, 3.5, 3.5);
     pdf.setFont("helvetica","normal");
-    pdf.text("Sim", 60, y + 4.5);
-    pdf.rect(73, y + 1, 3.5, 3.5);
-    pdf.text("Não", 78, y + 4.5);
+    pdf.text("Sim", 60, yR + 4.5);
+    pdf.rect(73, yR + 1, 3.5, 3.5);
+    pdf.text("Não", 78, yR + 4.5);
     pdf.setFont("helvetica","bold");
-    pdf.text("Hora:", 97, y + 4.5);
+    pdf.text("Hora:", 97, yR + 4.5);
     pdf.setDrawColor(180,180,180);
-    pdf.rect(108, y, 33, 7);
-    pdf.text("Data:", 146, y + 4.5);
-    pdf.rect(156, y, 44, 7);
+    pdf.rect(108, yR, 33, 7);
+    pdf.text("Data:", 146, yR + 4.5);
+    pdf.rect(156, yR, 44, 7);
     pdf.setDrawColor(0,0,0);
-    y += 13;
+    yR += 12;
 
     // Assinaturas
     pdf.setFont("helvetica","bold"); pdf.setFontSize(8);
-    pdf.text("RESP. APONTAMENTO:", ML, y);
-    pdf.text("ASSINATURA DO OPERADOR:", 108, y);
-    y += 10;
+    pdf.text("RESP. APONTAMENTO:", ML, yR);
+    pdf.text("ASSINATURA DO OPERADOR:", 108, yR);
+    yR += 9;
     pdf.setDrawColor(150,150,150);
-    pdf.line(ML, y, 100, y);
-    pdf.line(108, y, 200, y);
+    pdf.line(ML, yR, 100, yR);
+    pdf.line(108, yR, 200, yR);
     pdf.setDrawColor(0,0,0);
     pdf.setFont("helvetica","normal"); pdf.setFontSize(7);
-    pdf.text("Nome / Assinatura", ML, y + 4);
-    pdf.text("Nome / Assinatura", 108, y + 4);
+    pdf.text("Nome / Assinatura", ML, yR + 4);
+    pdf.text("Nome / Assinatura", 108, yR + 4);
 
     // ════════════════════════════════════════
     // MERGE COM RANCHO (se houver)
