@@ -343,7 +343,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
             pdf.setFillColor(248,249,250);
             for(let j=0;j<colunas.length;j++) pdf.rect(ML + j*largCol, y, largCol, altRow, 'F');
         }
-        for(let j=5;j<colunas.length;j++) pdf.rect(ML + j*largCol, y, largCol, altRow);
+        for(let j=0;j<colunas.length;j++) pdf.rect(ML + j*largCol, y, largCol, altRow);
         y += altRow;
     }
 
