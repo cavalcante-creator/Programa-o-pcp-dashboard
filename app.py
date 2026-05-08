@@ -225,8 +225,8 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     const PAGE_H  = 297;  // altura A4 em mm
     const MB      = 10;   // margem inferior
 
-    // ── Rodapé: Redimensionado para dar os vãos solicitados ──
-    const RODAPE_TOTAL = 100; 
+    // ── Rodapé: Tamanho fixo para garantir Observações ──
+    const RODAPE_TOTAL = 105; 
     const Y_RODAPE = PAGE_H - MB - RODAPE_TOTAL; 
 
     // ── Helper: campo com label acima e borda ──
@@ -273,14 +273,14 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.text("LINHA: " + String(linha).toUpperCase(), ML + 105, y + 6);
     pdf.setTextColor(0,0,0);
     
-    // MARCAÇÃO ROXA 1: Espaço após cabeçalho e antes dos dados
+    // MARCAÇÃO ROXA 1: Espaço após cabeçalho
     y += 18; 
 
     // ════════════════════════════════════════
     // CAMPOS DE DADOS
     // ════════════════════════════════════════
-    const CH = 10;
-    const GAP = 4.5;
+    const CH = 9.5;
+    const GAP = 4.2;
 
     const linhaNome = String(linha).toUpperCase().replace(/_/g," ").trim();
     const ehLinha123 = /^LINHA\s*[123]$/.test(linhaNome) || /LINHA\s*[123]\b/.test(linhaNome);
@@ -314,7 +314,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     } else {
         campo(ML, y, LARGURA, CH, "RANCHO", numeroRancho);
     }
-    y += CH + 8;
+    y += CH + 7;
 
     // ════════════════════════════════════════
     // TABELA DE HORAS
@@ -327,15 +327,15 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     }
 
     const largCol  = LARGURA / colunas.length;
-    const altCab   = 7.5;
-    const altRow   = 5; // Compactada para liberar espaço para os vãos
+    const altCab   = 7;
+    const altRow   = 4.8; 
     const NUM_LINHAS = 10;
 
     pdf.setFillColor(44,62,80);
     for(let i=0;i<colunas.length;i++) pdf.rect(ML + i*largCol, y, largCol, altCab, 'F');
     pdf.setTextColor(255,255,255);
     pdf.setFont("helvetica","bold"); pdf.setFontSize(7);
-    colunas.forEach((c,i) => pdf.text(c, ML + i*largCol + 1.5, y + 4.8));
+    colunas.forEach((c,i) => pdf.text(c, ML + i*largCol + 1.5, y + 4.5));
     pdf.setTextColor(0,0,0);
     y += altCab;
 
@@ -353,7 +353,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     y += 8;
 
     // ════════════════════════════════════════
-    // OBSERVAÇÕES
+    // OBSERVAÇÕES — RESTAURADA E FIXADA
     // ════════════════════════════════════════
     const Y_OBS_LABEL = y + 4;
     const Y_OBS_BOX   = Y_OBS_LABEL + 3.5;
@@ -362,7 +362,8 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.setFont("helvetica","bold"); pdf.setFontSize(8.5);
     pdf.text("OBSERVAÇÕES:", ML, Y_OBS_LABEL);
     pdf.setDrawColor(180,180,180);
-    pdf.rect(ML, Y_OBS_BOX, LARGURA, ALT_OBS > 15 ? ALT_OBS : 15);
+    // Força uma altura mínima de 18mm para observações
+    pdf.rect(ML, Y_OBS_BOX, LARGURA, ALT_OBS > 18 ? ALT_OBS : 18);
     pdf.setDrawColor(0,0,0);
 
     // ════════════════════════════════════════
