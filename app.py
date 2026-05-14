@@ -225,8 +225,8 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     const PAGE_H  = 297;  // altura A4 em mm
     const MB      = 10;   // margem inferior
 
-    // ── Rodapé: Reduzido para dar espaço às observações ──
-    const RODAPE_TOTAL = 80; 
+    // ── Rodapé: Expandido para dois apontamentos ──
+    const RODAPE_TOTAL = 115; 
     const Y_RODAPE = PAGE_H - MB - RODAPE_TOTAL; 
 
     // ── Helper: campo com label acima e borda ──
@@ -401,24 +401,72 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.setFont("helvetica","bold"); pdf.setFontSize(8.5);
     pdf.text("APONTAMENTO NO SISTEMA", 105, yR + 4.8, { align:"center" });
     pdf.setTextColor(0,0,0);
-    yR += 10;
+    yR += 9;
 
-    pdf.setFont("helvetica","bold"); pdf.setFontSize(8.5);
+    // ── Apontamento 12:00 ──
+    pdf.setFillColor(220,235,255);
+    pdf.rect(ML, yR, LARGURA, 6, 'F');
+    pdf.setFont("helvetica","bold"); pdf.setFontSize(8);
+    pdf.text("🕛  APONTAMENTO 12:00", ML + 4, yR + 4.2);
+    yR += 7;
+
+    pdf.setFont("helvetica","bold"); pdf.setFontSize(8);
     pdf.text("Apontado:", ML, yR + 4.5);
     pdf.rect(30, yR + 1, 3.5, 3.5);
-    pdf.setFont("helvetica","normal");
+    pdf.setFont("helvetica","normal"); pdf.setFontSize(8);
     pdf.text("Sim", 35, yR + 4.5);
-    pdf.rect(52, yR + 1, 3.5, 3.5);
-    pdf.text("Não", 57, yR + 4.5);
+    pdf.rect(50, yR + 1, 3.5, 3.5);
+    pdf.text("Não", 55, yR + 4.5);
     pdf.setFont("helvetica","bold");
-    pdf.text("Hora:", 80, yR + 4.5);
+    pdf.text("Hora:", 72, yR + 4.5);
     pdf.setDrawColor(180,180,180);
-    pdf.rect(92, yR, 32, 7);
-    pdf.text("Data:", 135, yR + 4.5);
-    pdf.rect(145, yR, 38, 7);
+    pdf.rect(82, yR, 28, 6.5);
+    pdf.text("Data:", 116, yR + 4.5);
+    pdf.rect(126, yR, 32, 6.5);
+    pdf.setDrawColor(0,0,0);
+    yR += 8.5;
+
+    pdf.setFont("helvetica","bold"); pdf.setFontSize(8);
+    pdf.text("Qtde Produzida:", ML, yR + 4.5);
+    pdf.setDrawColor(180,180,180);
+    pdf.rect(ML + 38, yR, 32, 6.5);
+    pdf.text("Qtde Pendente:", ML + 75, yR + 4.5);
+    pdf.rect(ML + 112, yR, 32, 6.5);
+    pdf.setDrawColor(0,0,0);
+    yR += 10;
+
+    // ── Apontamento 17:15 ──
+    pdf.setFillColor(220,255,230);
+    pdf.rect(ML, yR, LARGURA, 6, 'F');
+    pdf.setFont("helvetica","bold"); pdf.setFontSize(8);
+    pdf.text("🕔  APONTAMENTO 17:15", ML + 4, yR + 4.2);
+    yR += 7;
+
+    pdf.setFont("helvetica","bold"); pdf.setFontSize(8);
+    pdf.text("Apontado:", ML, yR + 4.5);
+    pdf.rect(30, yR + 1, 3.5, 3.5);
+    pdf.setFont("helvetica","normal"); pdf.setFontSize(8);
+    pdf.text("Sim", 35, yR + 4.5);
+    pdf.rect(50, yR + 1, 3.5, 3.5);
+    pdf.text("Não", 55, yR + 4.5);
+    pdf.setFont("helvetica","bold");
+    pdf.text("Hora:", 72, yR + 4.5);
+    pdf.setDrawColor(180,180,180);
+    pdf.rect(82, yR, 28, 6.5);
+    pdf.text("Data:", 116, yR + 4.5);
+    pdf.rect(126, yR, 32, 6.5);
+    pdf.setDrawColor(0,0,0);
+    yR += 8.5;
+
+    pdf.setFont("helvetica","bold"); pdf.setFontSize(8);
+    pdf.text("Qtde Produzida:", ML, yR + 4.5);
+    pdf.setDrawColor(180,180,180);
+    pdf.rect(ML + 38, yR, 32, 6.5);
+    pdf.text("Qtde Pendente:", ML + 75, yR + 4.5);
+    pdf.rect(ML + 112, yR, 32, 6.5);
     pdf.setDrawColor(0,0,0);
     
-    yR += 12; // Espaço para as instruções
+    yR += 11; // Espaço para as instruções
 
     // 4. INSTRUÇÕES
     pdf.setFillColor(255,249,220);
