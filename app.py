@@ -407,7 +407,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.setFillColor(220,235,255);
     pdf.rect(ML, yR, LARGURA, 6, 'F');
     pdf.setFont("helvetica","bold"); pdf.setFontSize(8);
-    pdf.text("🕛  APONTAMENTO 12:00", ML + 4, yR + 4.2);
+    pdf.text("APONTAMENTO 12:00", ML + 4, yR + 4.2);
     yR += 7;
 
     pdf.setFont("helvetica","bold"); pdf.setFontSize(8);
@@ -439,7 +439,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.setFillColor(220,255,230);
     pdf.rect(ML, yR, LARGURA, 6, 'F');
     pdf.setFont("helvetica","bold"); pdf.setFontSize(8);
-    pdf.text("🕔  APONTAMENTO 17:15", ML + 4, yR + 4.2);
+    pdf.text("APONTAMENTO 17:15", ML + 4, yR + 4.2);
     yR += 7;
 
     pdf.setFont("helvetica","bold"); pdf.setFontSize(8);
@@ -466,7 +466,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.rect(ML + 112, yR, 32, 6.5);
     pdf.setDrawColor(0,0,0);
     
-    yR += 11; // Espaço para as instruções
+    yR += 5; // Espaço para as instruções
 
     // 4. INSTRUÇÕES
     pdf.setFillColor(255,249,220);
