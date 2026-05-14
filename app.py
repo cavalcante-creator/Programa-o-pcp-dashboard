@@ -446,7 +446,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.text("Pend:", ML + 167, yR + 4.8);
     pdf.rect(ML + 177, yR + 0.5, 13, 6);
     pdf.setDrawColor(0,0,0);
-    yR += 9;
+    yR += 14;
 
     // 4. INSTRUÇÕES
     pdf.setFillColor(255,249,220);
