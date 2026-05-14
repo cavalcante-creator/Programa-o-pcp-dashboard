@@ -403,8 +403,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     yR += 9;
 
     // ── Linha: 12:00 | Apontado Sim/Não | Hora | Data | Qtde Prod | Qtde Pend ──
-    pdf.setFillColor(220,235,255);
-    pdf.rect(ML, yR, LARGURA, 7, 'F');
+    pdf.rect(ML, yR, LARGURA, 7);
     pdf.setFont("helvetica","bold"); pdf.setFontSize(8);
     pdf.text("12:00", ML + 2, yR + 4.8);
     pdf.text("Apontado:", ML + 14, yR + 4.8);
@@ -427,8 +426,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     yR += 9;
 
     // ── Linha: 17:15 | Apontado Sim/Não | Hora | Data | Qtde Prod | Qtde Pend ──
-    pdf.setFillColor(220,255,230);
-    pdf.rect(ML, yR, LARGURA, 7, 'F');
+    pdf.rect(ML, yR, LARGURA, 7);
     pdf.setFont("helvetica","bold"); pdf.setFontSize(8);
     pdf.text("17:15", ML + 2, yR + 4.8);
     pdf.text("Apontado:", ML + 14, yR + 4.8);
