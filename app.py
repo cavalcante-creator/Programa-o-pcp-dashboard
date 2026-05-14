@@ -226,8 +226,10 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     const MB      = 10;   // margem inferior
 
     // ── Rodapé: Expandido para dois apontamentos ──
-    const RODAPE_TOTAL = 115; 
-    const Y_RODAPE = PAGE_H - MB - RODAPE_TOTAL; 
+    const RODAPE_TOTAL = 130; 
+    const Y_RODAPE = PAGE_H - MB - RODAPE_TOTAL;
+    // Garante que STATUS nao sobreponha OBS
+    // Y_OBS_BOX termina em: Y_OBS_LABEL + 3.5 + 22 = y + 5.5 + 3.5 + 22 = y + 31 
 
     // ── Helper: campo com label acima e borda ──
     function campo(x, yy, w, h, label, valor){
@@ -350,20 +352,18 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     // ════════════════════════════════════════
     // OBSERVAÇÕES
     // ════════════════════════════════════════
-    const Y_OBS_LABEL = y + 5.5;
-    const Y_OBS_BOX   = Y_OBS_LABEL + 3.5;
-    const ALT_OBS     = Y_RODAPE - Y_OBS_BOX - 0; 
-
+    let yR = y + 5;
     pdf.setFont("helvetica","bold"); pdf.setFontSize(8.5);
-    pdf.text("OBSERVAÇÕES:", ML, Y_OBS_LABEL);
+    pdf.text("OBSERVAÇÕES:", ML, yR);
+    yR += 3.5;
     pdf.setDrawColor(180,180,180);
-    pdf.rect(ML, Y_OBS_BOX, LARGURA, ALT_OBS > 20 ? ALT_OBS : 20);
+    pdf.rect(ML, yR, LARGURA, 22);
     pdf.setDrawColor(0,0,0);
+    yR += 25;
 
     // ════════════════════════════════════════
-    // RODAPÉ — ORDEM INVERTIDA: ASSINATURAS ACIMA DO APONTAMENTO
+    // RODAPÉ — SEQUENCIAL (sem Y_RODAPE fixo)
     // ════════════════════════════════════════
-    let yR = Y_RODAPE;
 
     // 1. STATUS DA ORDEM
     pdf.setFillColor(235,235,235);
@@ -376,10 +376,9 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.text("Ordem Finalizada", 73, yR + 5);
     pdf.rect(125, yR + 2, 3.5, 3.5);
     pdf.text("Ordem irá finalizar outro dia", 130, yR + 5);
-    
-    yR += 20; // Espaço para separar do próximo bloco
+    yR += 10;
 
-    // 2. ASSINATURAS (AGORA EM CIMA)
+    // 2. ASSINATURAS
     pdf.setFont("helvetica","bold"); pdf.setFontSize(8.5);
     pdf.text("RESP. APONTAMENTO:", ML, yR);
     pdf.text("ASSINATURA DO OPERADOR:", 108, yR);
@@ -391,8 +390,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.setFont("helvetica","normal"); pdf.setFontSize(7.5);
     pdf.text("Nome / Assinatura", ML, yR + 4);
     pdf.text("Nome / Assinatura", 108, yR + 4);
-    
-    yR += 12; // Espaço para separar do próximo bloco
+    yR += 10;
 
     // 3. APONTAMENTO NO SISTEMA (AGORA EMBAIXO)
     pdf.setFillColor(235,235,235);
