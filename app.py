@@ -226,7 +226,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     const MB      = 10;   // margem inferior
 
     // ── Rodapé: Expandido para dois apontamentos ──
-    const RODAPE_TOTAL = 130; 
+    const RODAPE_TOTAL = 95; 
     const Y_RODAPE = PAGE_H - MB - RODAPE_TOTAL;
     // Garante que STATUS nao sobreponha OBS
     // Y_OBS_BOX termina em: Y_OBS_LABEL + 3.5 + 22 = y + 5.5 + 3.5 + 22 = y + 31 
@@ -352,18 +352,20 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     // ════════════════════════════════════════
     // OBSERVAÇÕES
     // ════════════════════════════════════════
-    let yR = y + 5;
+    const Y_OBS_LABEL = y + 5.5;
+    const Y_OBS_BOX   = Y_OBS_LABEL + 3.5;
+    const ALT_OBS     = Y_RODAPE - Y_OBS_BOX - 0;
+
     pdf.setFont("helvetica","bold"); pdf.setFontSize(8.5);
-    pdf.text("OBSERVAÇÕES:", ML, yR);
-    yR += 3.5;
+    pdf.text("OBSERVAÇÕES:", ML, Y_OBS_LABEL);
     pdf.setDrawColor(180,180,180);
-    pdf.rect(ML, yR, LARGURA, 22);
+    pdf.rect(ML, Y_OBS_BOX, LARGURA, ALT_OBS > 20 ? ALT_OBS : 20);
     pdf.setDrawColor(0,0,0);
-    yR += 25;
 
     // ════════════════════════════════════════
-    // RODAPÉ — SEQUENCIAL (sem Y_RODAPE fixo)
+    // RODAPÉ ORIGINAL
     // ════════════════════════════════════════
+    let yR = Y_RODAPE;
 
     // 1. STATUS DA ORDEM
     pdf.setFillColor(235,235,235);
@@ -376,7 +378,7 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.text("Ordem Finalizada", 73, yR + 5);
     pdf.rect(125, yR + 2, 3.5, 3.5);
     pdf.text("Ordem irá finalizar outro dia", 130, yR + 5);
-    yR += 10;
+    yR += 20;
 
     // 2. ASSINATURAS
     pdf.setFont("helvetica","bold"); pdf.setFontSize(8.5);
@@ -390,81 +392,63 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     pdf.setFont("helvetica","normal"); pdf.setFontSize(7.5);
     pdf.text("Nome / Assinatura", ML, yR + 4);
     pdf.text("Nome / Assinatura", 108, yR + 4);
-    yR += 10;
+    yR += 12;
 
-    // 3. APONTAMENTO NO SISTEMA (AGORA EMBAIXO)
+    // 3. APONTAMENTO NO SISTEMA
     pdf.setFillColor(235,235,235);
     pdf.rect(ML, yR, LARGURA, 7, 'F');
     pdf.setTextColor(0,0,0);
     pdf.setFont("helvetica","bold"); pdf.setFontSize(8.5);
     pdf.text("APONTAMENTO NO SISTEMA", 105, yR + 4.8, { align:"center" });
-    pdf.setTextColor(0,0,0);
     yR += 9;
 
-    // ── Apontamento 12:00 ──
+    // ── Linha: 12:00 | Apontado Sim/Não | Hora | Data | Qtde Prod | Qtde Pend ──
     pdf.setFillColor(220,235,255);
-    pdf.rect(ML, yR, LARGURA, 6, 'F');
+    pdf.rect(ML, yR, LARGURA, 7, 'F');
     pdf.setFont("helvetica","bold"); pdf.setFontSize(8);
-    pdf.text("APONTAMENTO 12:00", ML + 4, yR + 4.2);
-    yR += 7;
-
-    pdf.setFont("helvetica","bold"); pdf.setFontSize(8);
-    pdf.text("Apontado:", ML, yR + 4.5);
-    pdf.rect(30, yR + 1, 3.5, 3.5);
+    pdf.text("12:00", ML + 2, yR + 4.8);
+    pdf.text("Apontado:", ML + 14, yR + 4.8);
+    pdf.rect(ML + 34, yR + 1.8, 3.5, 3.5);
     pdf.setFont("helvetica","normal"); pdf.setFontSize(8);
-    pdf.text("Sim", 35, yR + 4.5);
-    pdf.rect(50, yR + 1, 3.5, 3.5);
-    pdf.text("Não", 55, yR + 4.5);
+    pdf.text("Sim", ML + 39, yR + 4.8);
+    pdf.rect(ML + 51, yR + 1.8, 3.5, 3.5);
+    pdf.text("Não", ML + 56, yR + 4.8);
     pdf.setFont("helvetica","bold");
-    pdf.text("Hora:", 72, yR + 4.5);
+    pdf.text("Hora:", ML + 68, yR + 4.8);
     pdf.setDrawColor(180,180,180);
-    pdf.rect(82, yR, 28, 6.5);
-    pdf.text("Data:", 116, yR + 4.5);
-    pdf.rect(126, yR, 32, 6.5);
+    pdf.rect(ML + 79, yR + 0.5, 20, 6);
+    pdf.text("Data:", ML + 101, yR + 4.8);
+    pdf.rect(ML + 111, yR + 0.5, 22, 6);
+    pdf.text("Prod:", ML + 135, yR + 4.8);
+    pdf.rect(ML + 145, yR + 0.5, 20, 6);
+    pdf.text("Pend:", ML + 167, yR + 4.8);
+    pdf.rect(ML + 177, yR + 0.5, 13, 6);
     pdf.setDrawColor(0,0,0);
-    yR += 8.5;
+    yR += 9;
 
-    pdf.setFont("helvetica","bold"); pdf.setFontSize(8);
-    pdf.text("Qtde Produzida:", ML, yR + 4.5);
-    pdf.setDrawColor(180,180,180);
-    pdf.rect(ML + 38, yR, 32, 6.5);
-    pdf.text("Qtde Pendente:", ML + 75, yR + 4.5);
-    pdf.rect(ML + 112, yR, 32, 6.5);
-    pdf.setDrawColor(0,0,0);
-    yR += 10;
-
-    // ── Apontamento 17:15 ──
+    // ── Linha: 17:15 | Apontado Sim/Não | Hora | Data | Qtde Prod | Qtde Pend ──
     pdf.setFillColor(220,255,230);
-    pdf.rect(ML, yR, LARGURA, 6, 'F');
+    pdf.rect(ML, yR, LARGURA, 7, 'F');
     pdf.setFont("helvetica","bold"); pdf.setFontSize(8);
-    pdf.text("APONTAMENTO 17:15", ML + 4, yR + 4.2);
-    yR += 7;
-
-    pdf.setFont("helvetica","bold"); pdf.setFontSize(8);
-    pdf.text("Apontado:", ML, yR + 4.5);
-    pdf.rect(30, yR + 1, 3.5, 3.5);
+    pdf.text("17:15", ML + 2, yR + 4.8);
+    pdf.text("Apontado:", ML + 14, yR + 4.8);
+    pdf.rect(ML + 34, yR + 1.8, 3.5, 3.5);
     pdf.setFont("helvetica","normal"); pdf.setFontSize(8);
-    pdf.text("Sim", 35, yR + 4.5);
-    pdf.rect(50, yR + 1, 3.5, 3.5);
-    pdf.text("Não", 55, yR + 4.5);
+    pdf.text("Sim", ML + 39, yR + 4.8);
+    pdf.rect(ML + 51, yR + 1.8, 3.5, 3.5);
+    pdf.text("Não", ML + 56, yR + 4.8);
     pdf.setFont("helvetica","bold");
-    pdf.text("Hora:", 72, yR + 4.5);
+    pdf.text("Hora:", ML + 68, yR + 4.8);
     pdf.setDrawColor(180,180,180);
-    pdf.rect(82, yR, 28, 6.5);
-    pdf.text("Data:", 116, yR + 4.5);
-    pdf.rect(126, yR, 32, 6.5);
+    pdf.rect(ML + 79, yR + 0.5, 20, 6);
+    pdf.text("Data:", ML + 101, yR + 4.8);
+    pdf.rect(ML + 111, yR + 0.5, 22, 6);
+    pdf.text("Prod:", ML + 135, yR + 4.8);
+    pdf.rect(ML + 145, yR + 0.5, 20, 6);
+    pdf.text("Pend:", ML + 167, yR + 4.8);
+    pdf.rect(ML + 177, yR + 0.5, 13, 6);
     pdf.setDrawColor(0,0,0);
-    yR += 8.5;
-
-    pdf.setFont("helvetica","bold"); pdf.setFontSize(8);
-    pdf.text("Qtde Produzida:", ML, yR + 4.5);
-    pdf.setDrawColor(180,180,180);
-    pdf.rect(ML + 38, yR, 32, 6.5);
-    pdf.text("Qtde Pendente:", ML + 75, yR + 4.5);
-    pdf.rect(ML + 112, yR, 32, 6.5);
-    pdf.setDrawColor(0,0,0);
-    
-    yR += 5; // Espaço para as instruções
+    yR += 9;
 
     // 4. INSTRUÇÕES
     pdf.setFillColor(255,249,220);
