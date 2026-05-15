@@ -321,10 +321,10 @@ async function exportarCard(produto, ordem, turno, qtde, pendente, status, data,
     // ════════════════════════════════════════
     let colunas;
     if(linhaNome.includes("AREA LIQUIDA")){
-        colunas = ["HORA INICIO","HORA FIM","N PALLETS","FD","RASGADOS","PARADAS"];
-    } else {
-        colunas = ["HORA INICIO","HORA FIM","N PALLETS","SACOS (UN)","RASGADOS","PARADAS"];
-    }
+    colunas = ["HORA INICIO","HORA FIM","N PALLETS","FD","RASGADOS","PAL. DANIF.","EMBAL. ADIC.","PARADAS"];
+} else {
+    colunas = ["HORA INICIO","HORA FIM","N PALLETS","SACOS (UN)","RASGADOS","PAL. DANIF.","EMBAL. ADIC.","PARADAS"];
+}
 
     const largCol  = LARGURA / colunas.length;
     const altCab   = 7.5;
